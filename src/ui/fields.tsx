@@ -1,20 +1,24 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 
 export function NumberField({ label, value, onChange, min, step = 1 }: {
   label: string; value: number; onChange: (v: number) => void; min?: number; step?: number;
 }) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const shown = draft ?? (Number.isFinite(value) ? String(value) : '');
   return (
     <label className="field">
       <span>{label}</span>
       <input
         type="number"
-        value={Number.isFinite(value) ? value : ''}
+        value={shown}
         min={min}
         step={step}
         onChange={(e) => {
+          setDraft(e.target.value);
           const v = e.target.valueAsNumber;
           if (!Number.isNaN(v)) onChange(v);
         }}
+        onBlur={() => setDraft(null)}
       />
     </label>
   );

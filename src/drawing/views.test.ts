@@ -21,8 +21,8 @@ describe('frontView', () => {
   });
   it('draws filled fronts and dashed envelope', () => {
     const polys = d.prims.filter((q): q is Extract<Prim, { t: 'poly' }> => q.t === 'poly');
-    expect(polys.some((q) => q.stroke === 'dashed')).toBe(true);
-    expect(polys.filter((q) => q.fill === 'panel').length).toBeGreaterThanOrEqual(2 + 4 + 3); // 2 doors + 7 drawer fronts
+    expect(polys.filter((q) => q.fill === 'panel')).toHaveLength(3 + 4); // 3 doors, 4 overlay fronts
+    expect(polys.filter((q) => q.stroke === 'dashed' && q.fill !== 'panel').length).toBeGreaterThanOrEqual(1 + 3 + 3); // envelope, 3 internal fronts, 3 shelves behind a door
   });
   it('mirrors when the tall side is on the right', () => {
     const q = defaultProject();
@@ -68,11 +68,21 @@ describe('columnDetail', () => {
   });
   it('drawer column: one dim per drawer front', () => {
     const d = columnDetail(p, 2);
-    expect(dimLens(d).filter((l) => Math.abs(l - 279.25) < 0.01)).toHaveLength(4);
+    // overlay drawers under a sloped top cede height to the open top shelf (its top caps at floorY + interiorHeight)
+    const h = L[2].drawerFronts[0].y1 - L[2].drawerFronts[0].y0;
+    expect(dimLens(d).filter((l) => Math.abs(l - h) < 0.01)).toHaveLength(4);
   });
   it('rod column: rod height dim', () => {
     const d = columnDetail(p, 0);
     expect(hasDim(d, 1630)).toBe(true);
+  });
+  it('internal drawers are drawn dashed behind the door in the front and inside the carcass in the section', () => {
+    const d = columnDetail(p, 3);
+    const polys = d.prims.filter((q): q is Extract<Prim, { t: 'poly' }> => q.t === 'poly');
+    expect(polys.filter((q) => q.stroke === 'dashed')).toHaveLength(3);
+    expect(polys.filter((q) => q.fill === 'panel')).toHaveLength(1 + 1 + 3); // door (front), door (section), 3 fronts (section)
+    const sectionFronts = polys.filter((q) => q.fill === 'panel' && q.pts[0].x >= L[3].width); // section is to the right
+    expect(sectionFronts.some((q) => q.pts[1].x - q.pts[0].x === 18 && q.pts[0].x > L[3].width + 100)).toBe(true);
   });
 });
 

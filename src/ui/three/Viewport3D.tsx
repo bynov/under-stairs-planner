@@ -48,8 +48,12 @@ export function Viewport3D() {
         <ambientLight intensity={0.7} />
         <directionalLight position={[-1000, 3000, -2000]} intensity={1.2} />
         <directionalLight position={[2000, 1000, 2000]} intensity={0.4} />
+        {ui.showEnvelope && <EnvelopeMesh envelope={env} mirror={mirror} />}
+        {/* The envelope is rendered outside this mirrored group: a negative-determinant
+            scale flips triangle/segment winding, which drei's Line (Line2/LineMaterial,
+            single-sided) then culls in screen space, hiding every envelope edge. Instead
+            EnvelopeMesh mirrors its own X coordinates when `mirror` is set. */}
         <group scale={[mirror ? -1 : 1, 1, 1]} position={[mirror ? env.length : 0, 0, 0]}>
-          {ui.showEnvelope && <EnvelopeMesh envelope={env} />}
           {parts.map((p) => <PartMesh key={p.id} part={p} explode={ui.explode} />)}
           {ui.showDims && cols.map((L) => (
             <group key={L.index}>

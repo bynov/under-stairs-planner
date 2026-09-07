@@ -2,7 +2,7 @@ import type { Msg } from '../i18n';
 
 export type TallSide = 'left' | 'right';
 export type TopStyle = 'sloped' | 'stepped';
-export type FrontKind = 'none' | 'door' | 'drawers';
+export type Interior = 'shelves' | 'drawers';
 
 export interface Envelope {
   length: number;      // along X
@@ -16,10 +16,11 @@ export interface Envelope {
 export interface Column {
   id: string;
   width: number;
-  front: FrontKind;
-  shelves: number;
-  drawerCount: number;
-  rod: boolean;
+  interior: Interior;   // mutually exclusive contents
+  shelves: number;      // when interior = shelves; 0 = empty
+  drawerCount: number;  // when interior = drawers, >= 1
+  door: boolean;        // a door in front of the contents
+  rod: boolean;         // only when interior = shelves
 }
 
 export interface Cabinet {

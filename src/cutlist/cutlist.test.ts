@@ -26,8 +26,19 @@ describe('cut list', () => {
     expect(fronts).toHaveLength(1);
     expect(fronts[0].qty).toBe(4);
     expect(fronts[0].length).toBe(596);
-    expect(fronts[0].width).toBe(279.3);
+    // overlay drawers under a sloped top cede height to the open top shelf: the shelf caps at
+    // floorY + interiorHeight (the top panel's underside at the inner face), not the outer hLow
+    // topShelfY = topUnderY(582) = 1239 - 18/cos(atan 0.5) = 1218.8754; zone = topShelfY-100-18-2-2-9 = 1087.8754
+    // h = 1087.8754/4 = 271.9688 -> 272
+    expect(fronts[0].width).toBe(272);
     expect(fronts[0].nameKey).toBe('drawerFront');
+  });
+  it('groups the three internal drawer fronts of the door column into one row with a note', () => {
+    const rows = buildCutList(buildParts(defaultProject()));
+    const fronts = rows.filter((r) => r.kind === 'drawerFront' && r.columns.includes(4));
+    expect(fronts).toHaveLength(1);
+    expect(fronts[0].qty).toBe(3);
+    expect(fronts[0].notes).toEqual([{ key: 'note.internalFront' }]);
   });
   it('lists rod as length x diameter and keeps notes', () => {
     const rows = buildCutList(buildParts(defaultProject()));

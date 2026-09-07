@@ -15,7 +15,7 @@ export interface CutRow {
   notes: Msg[];
 }
 
-const KIND_ORDER: PartKind[] = ['side', 'top', 'bottom', 'back', 'shelf', 'door', 'drawerFront', 'fixedFront', 'plinth', 'rod'];
+const KIND_ORDER: PartKind[] = ['side', 'top', 'bottom', 'back', 'shelf', 'door', 'drawerFront', 'plinth', 'rod'];
 const r1 = (x: number) => Math.round(x * 10) / 10;
 
 export function partDims(part: Part): { length: number; width: number } {

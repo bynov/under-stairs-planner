@@ -107,9 +107,11 @@ Carcass sits on the plinth: bottom panel underside at `y = plinthHeight`.
     reveal at the edges and sit in front of the carcass (z −t..0). Under a
     `sloped` top the triangular space above `hLow` stays **open** as a
     single shelf: a fixed shelf board (`nameKey: shelf`, standard 20 mm
-    setback) with its top surface at `hLow`; the drawer zone runs from the
-    carcass underside up to the shelf's underside minus the reveal
-    (`hLow − t − 2`). Under a `stepped` top there is no triangle: no top
+    setback) with its top surface at the interior height of the low side
+    (`floorY + interiorHeight`, the top panel's underside at the inner face
+    of the right side, `t/cosθ − t·tanθ` below `hLow`); the drawer zone
+    runs from the carcass underside up to the shelf's underside minus the
+    reveal. Under a `stepped` top there is no triangle: no top
     shelf, and the zone runs up to `hLow − 2`. There is no fixed front
     panel.
   - *Internal* (`door = true`): fronts sit inside the carcass, flush with

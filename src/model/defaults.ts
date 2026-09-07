@@ -7,7 +7,7 @@ export function newColumnId(): string {
 }
 
 export function defaultColumn(width = 500): Column {
-  return { id: newColumnId(), width, front: 'door', shelves: 0, drawerCount: 3, rod: false };
+  return { id: newColumnId(), width, interior: 'shelves', shelves: 0, drawerCount: 3, door: true, rod: false };
 }
 
 export function defaultProject(): Project {
@@ -22,10 +22,10 @@ export function defaultProject(): Project {
       gapBack: 20,
       topStyle: 'sloped',
       columns: [
-        { ...defaultColumn(700), front: 'door', rod: true },
-        { ...defaultColumn(600), front: 'door', shelves: 3 },
-        { ...defaultColumn(600), front: 'drawers', drawerCount: 4 },
-        { ...defaultColumn(600), front: 'drawers', drawerCount: 3 },
+        { ...defaultColumn(700), rod: true },
+        { ...defaultColumn(600), shelves: 3 },
+        { ...defaultColumn(600), interior: 'drawers', drawerCount: 4, door: false },
+        { ...defaultColumn(600), interior: 'drawers', drawerCount: 3, door: true },
       ],
     },
   };

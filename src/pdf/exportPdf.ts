@@ -58,10 +58,11 @@ function summaryPage(doc: jsPDF, p: Project, opts: PdfOptions, lang: Lang): void
   const env = p.envelope, cab = p.cabinet;
   const columns = cab.columns
     .map((c, i) => [
-      `${i + 1}: ${c.width} ${t(lang, `ui.front.${c.front}` as MessageKey)}`,
-      c.front === 'drawers' ? t(lang, 'pdf.drawersCount', { n: c.drawerCount }) : '',
-      c.shelves ? t(lang, 'pdf.shelvesCount', { n: c.shelves }) : '',
-      c.rod && c.front !== 'drawers' ? t(lang, 'pdf.withRod') : '',
+      `${i + 1}: ${c.width} ${t(lang, `ui.interior.${c.interior}` as MessageKey)}`,
+      c.interior === 'drawers' ? t(lang, 'pdf.drawersCount', { n: c.drawerCount }) : '',
+      c.interior === 'shelves' && c.shelves ? t(lang, 'pdf.shelvesCount', { n: c.shelves }) : '',
+      c.door ? t(lang, 'pdf.withDoor') : '',
+      c.rod && c.interior === 'shelves' ? t(lang, 'pdf.withRod') : '',
     ].filter(Boolean).join(' '))
     .join('; ');
   const rows: [string, string][] = [

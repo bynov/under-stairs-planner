@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createPlannerStore, startAutosave } from './store';
-import { serializeProject, parseProjectJson, loadFromStorage, loadLang } from './persist';
+import { serializeProject, parseProjectJson, parseErrorText, loadFromStorage, loadLang } from './persist';
 import { defaultProject } from '../model/defaults';
+import { msg } from '../i18n';
 
 const memStorage = () => {
   const mem = new Map<string, string>();
@@ -95,6 +96,42 @@ describe('persist', () => {
     stop();
     storage.setItem('understairs-planner:lang', 'xx');
     expect(loadLang(storage)).toBeNull();
+  });
+  it('migrates version 1 files (front -> interior/door)', () => {
+    const v1 = {
+      version: 1,
+      project: {
+        ...defaultProject(),
+        cabinet: {
+          ...defaultProject().cabinet,
+          columns: [
+            { id: 'a', width: 600, front: 'none', shelves: 2, drawerCount: 3, rod: true },
+            { id: 'b', width: 600, front: 'door', shelves: 0, drawerCount: 3, rod: false },
+            { id: 'c', width: 600, front: 'drawers', shelves: 0, drawerCount: 4, rod: false },
+          ],
+        },
+      },
+    };
+    const r = parseProjectJson(JSON.stringify(v1));
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      const c = r.project.cabinet.columns;
+      expect(c[0]).toEqual({ id: 'a', width: 600, interior: 'shelves', shelves: 2, drawerCount: 3, door: false, rod: true });
+      expect(c[1]).toMatchObject({ interior: 'shelves', door: true });
+      expect(c[2]).toMatchObject({ interior: 'drawers', door: false, drawerCount: 4 });
+      expect(serializeProject(r.project)).toContain('"version": 2');
+    }
+  });
+  it('rejects a v2 file with the old front field', () => {
+    const p = defaultProject() as unknown as { cabinet: { columns: Record<string, unknown>[] } };
+    const col = p.cabinet.columns[0];
+    delete col.interior; delete col.door; col.front = 'door';
+    expect(parseProjectJson(JSON.stringify({ version: 2, project: p })).ok).toBe(false);
+  });
+  it('parseErrorText renders params in the error message (F3)', () => {
+    expect(parseErrorText('en', { error: msg('error.badVersion', { version: 2 }) })).toBe('Expected a planner file with version 2');
+    expect(parseErrorText('ru', { error: msg('error.failsValidation'), reason: msg('error.length') }))
+      .toBe('Проект не проходит проверку: Длина должна быть > 0');
   });
   it('loadFromStorage returns null for empty or corrupt storage', () => {
     const storage = memStorage();

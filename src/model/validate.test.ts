@@ -39,6 +39,17 @@ describe('validate', () => {
     p.cabinet.columns[2].drawerCount = 0;
     expect(paths(p)).toContain('cabinet.columns[2].drawerCount');
   });
+  it('rejects a drawerCount that would produce sub-30mm drawer fronts (F2)', () => {
+    const p = defaultProject();
+    p.cabinet.columns[3].drawerCount = 30; // internal drawers, interiorHeight ~800.9
+    const e = validate(p).find((x) => x.path === 'cabinet.columns[3].drawerCount');
+    expect(e?.message).toEqual({ key: 'error.drawerHeight', params: { n: 4, h: 24, min: 30 } });
+  });
+  it('accepts a drawerCount that still fits (F2)', () => {
+    const p = defaultProject();
+    p.cabinet.columns[3].drawerCount = 3;
+    expect(paths(p)).not.toContain('cabinet.columns[3].drawerCount');
+  });
   it('does not produce NaN-driven errors when the envelope is invalid', () => {
     const p = defaultProject();
     p.envelope.length = 0;

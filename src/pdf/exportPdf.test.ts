@@ -28,5 +28,10 @@ describe('buildPdf', () => {
     expect(ru.getNumberOfPages()).toBe(en.getNumberOfPages());
     expect(Object.keys(ru.getFontList())).toContain('PTSans');
     expect(ru.getFont().fontName).toBe('PTSans');
+    // the embedded TrueType font must actually be a Type0/CID font with an embedded glyph program,
+    // otherwise Cyrillic text silently falls back to a font with no Cyrillic glyphs
+    const raw = Buffer.from(ru.output('arraybuffer')).toString('latin1');
+    expect(raw).toContain('FontFile2');
+    expect(raw).toContain('/Type0');
   });
 });

@@ -1,15 +1,15 @@
 import type { Project } from '../model/types';
 import { msg, type Msg } from '../i18n';
 import { slopeAngle } from './envelope';
-import { layoutColumns, PLINTH_SETBACK, REVEAL, ROD_DIAMETER, ROD_SETBACK, SHELF_SETBACK } from './column';
+import { layoutColumns, PLINTH_SETBACK, ROD_DIAMETER, ROD_SETBACK, SHELF_SETBACK } from './column';
 import { bounds3, FLAT_ROT, NO_ROT, ROD_ROT, SIDE_ROT, toWorld, v2, v3, type Box3, type Transform, type Vec2, type Vec3 } from './vec';
 
 export type PartKind =
-  | 'side' | 'top' | 'bottom' | 'back' | 'shelf' | 'door' | 'drawerFront' | 'fixedFront' | 'plinth' | 'rod';
+  | 'side' | 'top' | 'bottom' | 'back' | 'shelf' | 'door' | 'drawerFront' | 'plinth' | 'rod';
 export type Material = 'panel' | 'back' | 'rod';
 
 export type PartNameKey =
-  | 'sideL' | 'sideR' | 'top' | 'bottom' | 'back' | 'shelf' | 'door' | 'drawerFront' | 'fixedFront' | 'plinth' | 'rod';
+  | 'sideL' | 'sideR' | 'top' | 'bottom' | 'back' | 'shelf' | 'door' | 'drawerFront' | 'plinth' | 'rod';
 
 export interface Part {
   id: string;
@@ -82,16 +82,18 @@ export function buildParts(p: Project): Part[] {
     L.shelfYs.forEach((y, k) => {
       add(`shelf${k + 1}`, 'shelf', 'shelf', rect(L.interiorWidth, L.interiorDepth - SHELF_SETBACK), t, v3(x0 + t, y, SHELF_SETBACK), FLAT_ROT, 'panel', undefined, k + 1);
     });
+    if (L.topShelfY !== null) {
+      add('topShelf', 'shelf', 'shelf', rect(L.interiorWidth, L.interiorDepth - SHELF_SETBACK), t, v3(x0 + t, L.topShelfY, SHELF_SETBACK), FLAT_ROT);
+    }
     if (L.doorOutline) {
       add('door', 'door', 'door', L.doorOutline, t, v3(x0, plinth, -t), NO_ROT, 'panel', trap(L.doorOutline[3].y - L.doorOutline[0].y, L.doorOutline[2].y - L.doorOutline[1].y));
     }
     L.drawerFronts.forEach((d, k) => {
-      add(`drawer${k + 1}`, 'drawerFront', 'drawerFront', rect(w - 2 * REVEAL, d.y1 - d.y0), t, v3(x0 + REVEAL, plinth + d.y0, -t), NO_ROT, 'panel', undefined, k + 1);
+      const internal = L.drawerStyle === 'internal';
+      add(`drawer${k + 1}`, 'drawerFront', 'drawerFront', rect(d.x1 - d.x0, d.y1 - d.y0), t,
+        v3(x0 + d.x0, plinth + d.y0, internal ? 0 : -t), NO_ROT, 'panel',
+        internal ? [msg('note.internalFront')] : undefined, k + 1);
     });
-    if (L.fixedFront) {
-      const f = L.fixedFront;
-      add('fixedFront', 'fixedFront', 'fixedFront', f, t, v3(x0, plinth, -t), NO_ROT, 'panel', [msg('note.trapezoid', { l: r1(f[3].y - f[0].y), r: r1(f[2].y - f[1].y) })]);
-    }
     if (L.rodY !== null) {
       add('rod', 'rod', 'rod', circle(ROD_DIAMETER / 2, 24), L.interiorWidth, v3(x0 + t, L.rodY, ROD_SETBACK), ROD_ROT, 'rod', [msg('note.rodDia', { d: ROD_DIAMETER })]);
     }

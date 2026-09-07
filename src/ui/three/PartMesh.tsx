@@ -4,13 +4,14 @@ import type { Part, PartKind } from '../../geometry/parts';
 
 const COLORS: Record<PartKind, string> = {
   side: '#d9c7a3', top: '#d9c7a3', bottom: '#d9c7a3', shelf: '#e3d5b8', back: '#c9b48e',
-  door: '#a9c4d6', drawerFront: '#9fbbd0', fixedFront: '#b8cbd9', plinth: '#8a7a5e', rod: '#8c8c8c',
+  door: '#a9c4d6', drawerFront: '#9fbbd0', plinth: '#8a7a5e', rod: '#8c8c8c',
 };
 
 function explodeOffset(kind: PartKind, f: number): THREE.Vector3 {
   const o = new THREE.Vector3();
   switch (kind) {
-    case 'door': case 'drawerFront': case 'fixedFront': o.z = -400 * f; break;
+    case 'door': o.z = -500 * f; break;
+    case 'drawerFront': o.z = -300 * f; break;
     case 'top': o.y = 300 * f; break;
     case 'back': o.z = 300 * f; break;
     case 'plinth': o.y = -150 * f; break;

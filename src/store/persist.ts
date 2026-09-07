@@ -3,7 +3,7 @@ import { validate } from '../model/validate';
 import { isLang, msg, t, tm, type Lang, type Msg } from '../i18n';
 
 export const STORAGE_KEY = 'understairs-planner:project';
-export const FILE_VERSION = 1;
+export const FILE_VERSION = 2;
 
 export function serializeProject(p: Project): string {
   return JSON.stringify({ version: FILE_VERSION, project: p }, null, 2);
@@ -13,6 +13,22 @@ export type ParseResult = { ok: true; project: Project } | { ok: false; error: M
 
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null;
+
+/** Upgrade a parsed planner file object to the current version. Unknown input is returned as-is. */
+export function migrateProject(data: unknown): unknown {
+  if (!isObj(data) || data.version !== 1 || !isObj(data.project)) return data;
+  const project = data.project;
+  const cabinet = isObj(project.cabinet) ? project.cabinet : null;
+  if (!cabinet || !Array.isArray(cabinet.columns)) return data;
+  const columns = cabinet.columns.map((c: unknown) => {
+    if (!isObj(c)) return c;
+    const { front, ...rest } = c;
+    const interior = front === 'drawers' ? 'drawers' : 'shelves';
+    const door = front === 'door';
+    return { ...rest, interior, door };
+  });
+  return { version: FILE_VERSION, project: { ...project, cabinet: { ...cabinet, columns } } };
+}
 
 function isProjectShape(v: unknown): v is Project {
   if (!isObj(v) || typeof v.name !== 'string' || !isObj(v.envelope) || !isObj(v.cabinet)) return false;
@@ -25,8 +41,8 @@ function isProjectShape(v: unknown): v is Project {
   return c.columns.every(
     (col: unknown) =>
       isObj(col) && typeof col.id === 'string' && isNum(col.width) &&
-      (col.front === 'none' || col.front === 'door' || col.front === 'drawers') &&
-      isNum(col.shelves) && isNum(col.drawerCount) && typeof col.rod === 'boolean',
+      (col.interior === 'shelves' || col.interior === 'drawers') &&
+      isNum(col.shelves) && isNum(col.drawerCount) && typeof col.door === 'boolean' && typeof col.rod === 'boolean',
   );
 }
 
@@ -40,6 +56,7 @@ export function parseProjectShape(text: string): ParseResult {
   } catch {
     return { ok: false, error: msg('error.notJson') };
   }
+  data = migrateProject(data);
   if (!isObj(data) || data.version !== FILE_VERSION) return { ok: false, error: msg('error.badVersion', { version: FILE_VERSION }) };
   if (!isProjectShape(data.project)) return { ok: false, error: msg('error.badShape') };
   return { ok: true, project: data.project };
@@ -56,7 +73,7 @@ export function parseProjectJson(text: string): ParseResult {
 
 /** Renders a ParseResult's error (with its nested validation reason, if any) as text in `lang`. */
 export function parseErrorText(lang: Lang, r: { error: Msg; reason?: Msg }): string {
-  return r.reason ? t(lang, r.error.key, { reason: tm(lang, r.reason) }) : tm(lang, r.error);
+  return r.reason ? t(lang, r.error.key, { ...r.error.params, reason: tm(lang, r.reason) }) : tm(lang, r.error);
 }
 
 export type StorageLike = Pick<Storage, 'getItem' | 'setItem'>;

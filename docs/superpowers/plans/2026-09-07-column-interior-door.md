@@ -14,7 +14,7 @@
 
 - `Column { id, width, interior: 'shelves' | 'drawers', shelves, drawerCount, door: boolean, rod: boolean }`. Shelves/rod apply only when `interior = shelves`; `drawerCount >= 1` only when `interior = drawers`.
 - Migration v1→v2: `front: 'none'` → `{ interior: 'shelves', door: false }`, `'door'` → `{ interior: 'shelves', door: true }`, `'drawers'` → `{ interior: 'drawers', door: false }`; other fields copied. `FILE_VERSION = 2`; `parseProjectShape` accepts version 1 (migrates) or 2.
-- Overlay drawers (`door = false`): fronts x from `REVEAL` to `w − REVEAL`, gaps `DRAWER_GAP = 3`, z `−t..0`. Under a sloped top the triangle above `hLow` is an **open shelf**: `topShelfY = hLow` (absolute top surface of a shelf board between the sides, `SHELF_SETBACK` from the front, nameKey `shelf`, part id `col<i>-topShelf`), and the front zone is `REVEAL .. hLow − plinth − t − REVEAL`. Under a stepped top: no top shelf, zone `REVEAL .. hLow − plinth − REVEAL`. The fixed front panel is removed entirely (kind, nameKey, i18n key `part.fixedFront`, colour, explode case, cut-list order).
+- Overlay drawers (`door = false`): fronts x from `REVEAL` to `w − REVEAL`, gaps `DRAWER_GAP = 3`, z `−t..0`. Under a sloped top the triangle above `hLow` is an **open shelf**: `topShelfY = floorY + interiorHeight` (absolute top surface of a shelf board between the sides, capped by the top panel's underside at the inner face — not the outer surface `hLow` — `SHELF_SETBACK` from the front, nameKey `shelf`, part id `col<i>-topShelf`), and the front zone is `REVEAL .. topShelfY − plinth − t − REVEAL`. Under a stepped top: no top shelf, zone `REVEAL .. hLow − plinth − REVEAL`. The fixed front panel is removed entirely (kind, nameKey, i18n key `part.fixedFront`, colour, explode case, cut-list order).
 - Internal drawers (`door = true`): x from `t + DRAWER_GAP` to `w − t − DRAWER_GAP`; y zone from `t + DRAWER_GAP` to `t + interiorHeight − DRAWER_GAP` (column-local, origin at plinth top); z `0..t`; no top shelf; note `note.internalFront`.
 - Door outline unchanged (column front outline inset by `REVEAL`), for any interior when `door = true`.
 - Front elevation: contents behind a door (shelves, rod, internal drawer fronts) drawn `dashed`, unfilled.
@@ -434,3 +434,11 @@ CSS: `.row.free { display: flex; justify-content: space-between; align-items: ce
 - [ ] **Step 4: Gate + dev-server check**
 
 Run: `pnpm typecheck && pnpm test && pnpm build`; `pnpm dev` in background, curl `http://localhost:5173/src/ui/ColumnCard.tsx`, stop. Manual checks for the user: column 4 shows a door; Explode reveals three internal fronts; Front tab shows them dashed; free width reads "Free width: 100 mm" on the default project and the button is disabled; switching a column to Drawers hides the rod/shelves fields.
+
+- [ ] **Step 5: Bug fix — envelope lines vanish when tall side = right**
+
+`src/ui/three/Viewport3D.tsx` renders `<EnvelopeMesh>` inside `<group scale={[-1,1,1]}>` when `tallSide === 'right'`. A negative-determinant parent flips face winding, and three.js culls the screen-space quads of drei `Line` (`Line2`/`LineMaterial`, single-sided), so all envelope edges — including the dashed back wall — disappear. Fix: render the envelope **outside** the mirrored group and mirror its coordinates in data.
+
+`EnvelopeMesh` gets a `mirror: boolean` prop; inside, `const mx = (x: number) => (mirror ? L - x : x);` and every X coordinate in the slope geometry (`0`→`mx(0)`, `L`→`mx(L)`), the floor plane position (`L / 2` stays), and the `front`/`back`/vertical edge point lists uses `mx(...)`. In `Viewport3D`, move `{ui.showEnvelope && <EnvelopeMesh envelope={env} mirror={mirror} />}` out of the mirrored `<group>` (keep parts and dim labels inside). Add a comment on the group explaining why the envelope is outside.
+
+Verification (no browser): typecheck/build, and a note in the report; user checks: switch Tall side to Right — envelope edges and the dashed back wall remain visible, cabinet mirrored.

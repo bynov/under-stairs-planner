@@ -1,5 +1,5 @@
 import type { Project, ValidationError } from './types';
-import { ceilY } from '../geometry/envelope';
+import { ceilY, slopeAngle } from '../geometry/envelope';
 import { msg, type MessageKey, type Params } from '../i18n';
 
 export function validate(p: Project): ValidationError[] {
@@ -34,12 +34,31 @@ export function validate(p: Project): ValidationError[] {
     const path = `cabinet.columns[${i}]`;
     const n = i + 1;
     if (!(c.width >= minWidth)) err(`${path}.width`, 'error.columnWidth', { n, min: minWidth });
+    const x0 = x;
     x += c.width;
     if (envelopeOk) {
       const hLow = ceilY(env, x) - env.topClearance;
       if (hLow < minHeight) err(`${path}.width`, 'error.columnHeight', { n, h: Math.round(hLow), min: minHeight });
+      if (c.interior === 'drawers' && c.drawerCount >= 1) {
+        // mirrors layoutColumn's zone math (src/geometry/column.ts); keep in sync
+        const G = 3, R = 2;
+        const theta = slopeAngle(env);
+        const sloped = cab.topStyle === 'sloped';
+        const hTall = ceilY(env, x0) - env.topClearance;
+        const topY = (lx: number) => (sloped ? hTall - lx * Math.tan(theta) : hLow);
+        const topUnderY = (lx: number) => topY(lx) - (sloped ? t / Math.cos(theta) : t);
+        const floorY = cab.plinthHeight + t;
+        const interiorHeight = topUnderY(c.width - t) - floorY;
+        const zone = c.door
+          ? interiorHeight - 2 * G
+          : (sloped ? floorY + interiorHeight - cab.plinthHeight - t - R : hLow - cab.plinthHeight - R) - R;
+        const drawerH = (zone - (c.drawerCount - 1) * G) / c.drawerCount;
+        if (drawerH < 30) {
+          err(`${path}.drawerCount`, 'error.drawerHeight', { n, h: Math.round(drawerH), min: 30 });
+        }
+      }
     }
-    if (c.front === 'drawers' && !(c.drawerCount >= 1)) err(`${path}.drawerCount`, 'error.drawerCount', { n });
+    if (c.interior === 'drawers' && !(c.drawerCount >= 1)) err(`${path}.drawerCount`, 'error.drawerCount', { n });
     if (!(c.shelves >= 0)) err(`${path}.shelves`, 'error.shelves', { n });
   });
   return errors;

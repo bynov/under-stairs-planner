@@ -11,6 +11,9 @@ export function Sidebar() {
   const addColumn = useStore((s) => s.addColumn);
   const { t, tm } = useT();
   const { envelope: env, cabinet: cab } = project;
+  const used = cab.columns.reduce((s, c) => s + c.width, 0);
+  const free = env.length - used;
+  const minWidth = 2 * cab.panelThickness + 100;
   return (
     <aside className="sidebar">
       {errors.length > 0 && (
@@ -46,7 +49,10 @@ export function Sidebar() {
       </Section>
       <Section title={t('ui.section.columns')}>
         {cab.columns.map((c, i) => <ColumnCard key={c.id} column={c} index={i} count={cab.columns.length} />)}
-        <button onClick={addColumn}>{t('ui.addColumn')}</button>
+        <div className="row free">
+          <span className="derived">{t('ui.freeWidth', { n: Number.isFinite(free) ? Math.round(free) : 0 })}</span>
+          <button onClick={addColumn} disabled={!(free >= minWidth)}>{t('ui.addColumn')}</button>
+        </div>
       </Section>
     </aside>
   );

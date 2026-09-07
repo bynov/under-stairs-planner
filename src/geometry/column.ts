@@ -10,7 +10,8 @@ export const ROD_SETBACK = 250;
 export const ROD_DIAMETER = 25;
 export const PLINTH_SETBACK = 40;
 
-export interface DrawerFront { y0: number; y1: number } // column-local (origin at plinth top)
+export interface DrawerFront { x0: number; x1: number; y0: number; y1: number } // column-local (origin at x0, plinth top)
+export type DrawerStyle = 'overlay' | 'internal';
 
 export interface ColumnLayout extends ColumnRange {
   topThick: number;       // vertical thickness of the top panel (t / cos theta when sloped)
@@ -26,7 +27,8 @@ export interface ColumnLayout extends ColumnRange {
   shelfYs: number[];      // absolute Y of each shelf top surface
   doorOutline: Vec2[] | null;      // column-local
   drawerFronts: DrawerFront[];     // column-local
-  fixedFront: Vec2[] | null;       // column-local
+  drawerStyle: DrawerStyle | null;
+  topShelfY: number | null;   // absolute top surface of the open shelf above overlay drawers (sloped top only)
   rodY: number | null;             // absolute Y of rod axis
 }
 
@@ -56,42 +58,44 @@ export function layoutColumn(p: Project, r: ColumnRange): ColumnLayout {
   const backRightH = topUnderY(w - t) - floorY;
   const interiorHeight = backRightH;
 
-  const shelfPitch = interiorHeight / (col.shelves + 1);
-  const shelfYs = Array.from({ length: col.shelves }, (_, k) => floorY + (k + 1) * shelfPitch);
+  const shelfCount = col.interior === 'shelves' ? col.shelves : 0;
+  const shelfPitch = interiorHeight / (shelfCount + 1);
+  const shelfYs = Array.from({ length: shelfCount }, (_, k) => floorY + (k + 1) * shelfPitch);
 
   /** front outline height at column-local x, relative to plinth top */
   const frontTop = (lx: number) => topY(lx) - plinth;
-  const R = REVEAL;
+  const R = REVEAL, G = DRAWER_GAP;
 
-  let doorOutline: Vec2[] | null = null;
+  const doorOutline: Vec2[] | null = col.door
+    ? [v2(R, R), v2(w - R, R), v2(w - R, frontTop(w - R) - R), v2(R, frontTop(R) - R)]
+    : null;
+
   let drawerFronts: DrawerFront[] = [];
-  let fixedFront: Vec2[] | null = null;
-
-  if (col.front === 'door') {
-    doorOutline = [v2(R, R), v2(w - R, R), v2(w - R, frontTop(w - R) - R), v2(R, frontTop(R) - R)];
-  } else if (col.front === 'drawers') {
+  let drawerStyle: DrawerStyle | null = null;
+  let topShelfY: number | null = null;
+  if (col.interior === 'drawers') {
     const n = col.drawerCount;
-    const zoneBot = R;
-    const zoneTop = r.hLow - plinth - R;
-    const h = (zoneTop - zoneBot - (n - 1) * DRAWER_GAP) / n;
+    drawerStyle = col.door ? 'internal' : 'overlay';
+    if (!col.door && sloped) topShelfY = floorY + interiorHeight; // open shelf in the triangle above the drawers
+    const x0 = col.door ? t + G : R;
+    const x1 = col.door ? w - t - G : w - R;
+    const zoneBot = col.door ? t + G : R;
+    const zoneTop = col.door
+      ? t + interiorHeight - G
+      : topShelfY !== null ? topShelfY - plinth - t - R : r.hLow - plinth - R;
+    const h = (zoneTop - zoneBot - (n - 1) * G) / n;
     drawerFronts = Array.from({ length: n }, (_, i) => {
-      const y0 = zoneBot + i * (h + DRAWER_GAP);
-      return { y0, y1: y0 + h };
+      const y0 = zoneBot + i * (h + G);
+      return { x0, x1, y0, y1: y0 + h };
     });
-    if (sloped) {
-      const y0 = r.hLow - plinth + R;
-      const yR = Math.max(y0, frontTop(w - R) - R);
-      const yL = frontTop(R) - R;
-      fixedFront = [v2(R, y0), v2(w - R, y0), v2(w - R, yR), v2(R, yL)];
-    }
   }
 
-  const rodY = col.rod && col.front !== 'drawers' ? r.hLow - ROD_DROP : null;
+  const rodY = col.rod && col.interior === 'shelves' ? r.hLow - ROD_DROP : null;
 
   return {
     ...r,
     topThick, sideLeftH, sideRightH, interiorWidth, interiorDepth, interiorHeight, floorY,
-    backLeftH, backRightH, shelfPitch, shelfYs, doorOutline, drawerFronts, fixedFront, rodY,
+    backLeftH, backRightH, shelfPitch, shelfYs, doorOutline, drawerFronts, drawerStyle, topShelfY, rodY,
   };
 }
 
