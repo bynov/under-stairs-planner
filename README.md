@@ -64,6 +64,10 @@ Design notes live in `docs/superpowers/specs/`.
 Every push to `main` builds and publishes to GitHub Pages via
 `.github/workflows/pages.yml` (Pages source: GitHub Actions).
 
+## License
+
+MIT — see `LICENSE`.
+
 ## Credits
 
 PDF text uses [PT Sans](https://company.paratype.com/pt-sans-pt-serif)
