@@ -247,6 +247,13 @@ with its transform. Rod uses a cylinder. Envelope drawn as a translucent
 stair-underside plane + floor + back wall edges. Toggles: dimension labels
 (drei `Html`/text for key dims), explode (offset parts outward along Z / Y
 by a factor), envelope visibility. Camera fits to envelope bounds on load.
+Drawer boxes are a **3D-only visualisation** (not parts, not in drawings or
+the cut list): behind every drawer front a placeholder box — two sides and a
+back 12 mm, a 6 mm bottom, open top, no front — sized from the layout: width
+= interior width − 2 × 13 mm runner clearance (centred), height = front height
+− 20 mm (bottom 10 mm above the front's bottom edge), depth from the carcass
+front plane (`z = 0` for overlay fronts, `z = t` for internal) to interior
+depth − 20 mm. Explode moves the box together with its front.
 
 ### 3.6 State & persistence
 

@@ -4,8 +4,10 @@ import { Html, OrbitControls } from '@react-three/drei';
 import { useStore } from '../../store/store';
 import { buildParts } from '../../geometry/parts';
 import { layoutColumns } from '../../geometry/column';
+import { drawerBoxes } from '../../geometry/drawerBox';
 import { setSnapshotter } from '../snapshot';
 import { PartMesh } from './PartMesh';
+import { DrawerBoxMesh } from './DrawerBoxMesh';
 import { EnvelopeMesh } from './EnvelopeMesh';
 import { useT } from '../useT';
 
@@ -55,6 +57,9 @@ export function Viewport3D() {
             EnvelopeMesh mirrors its own X coordinates when `mirror` is set. */}
         <group scale={[mirror ? -1 : 1, 1, 1]} position={[mirror ? env.length : 0, 0, 0]}>
           {parts.map((p) => <PartMesh key={p.id} part={p} explode={ui.explode} />)}
+          {cols.flatMap((L) => drawerBoxes(L, project.cabinet).map((box, i) => (
+            <DrawerBoxMesh key={`box-${L.index}-${i}`} box={box} explode={ui.explode} />
+          )))}
           {ui.showDims && cols.map((L) => (
             <group key={L.index}>
               <Html position={[(L.x0 + L.x1) / 2, -60, -100]} center><div className="dim3d">{L.width}</div></Html>
