@@ -1,7 +1,7 @@
 # Under-Stairs Closet Planner — Design Spec
 
 Date: 2026-09-07
-Status: approved (chat), self-reviewed 2026-09-07, pending implementation plan
+Status: implemented 2026-09-07; amended 2026-09-07 for i18n (EN/RU) and column interior/door model (v2)
 
 ## 1. Goal
 
@@ -12,7 +12,9 @@ and the cabinet's columns; the tool shows the cabinet in 3D and in dimensioned
 list) suitable for building the cabinet.
 
 Non-goals (v1): pricing, hardware catalogues, curved/custom shapes, end-access
-closets, multi-language UI, cloud storage, mobile layout.
+closets, cloud storage, mobile layout.
+
+Languages: English and Russian (UI, drawings, cut list, PDF). See §2.6.
 
 ## 2. Domain model
 
@@ -57,10 +59,11 @@ interface Cabinet {
 interface Column {
   id: string;
   width: number;                       // outer width along X
-  front: 'none' | 'door' | 'drawers';
-  shelves: number;                     // evenly spaced fixed shelves, >= 0
-  drawerCount: number;                 // used when front === 'drawers'
-  rod: boolean;                        // hanging rail under the top
+  interior: 'shelves' | 'drawers';     // mutually exclusive contents
+  shelves: number;                     // when interior = shelves; 0 = empty
+  drawerCount: number;                 // when interior = drawers, >= 1
+  door: boolean;                       // a door in front of the contents
+  rod: boolean;                        // hanging rail; only when interior = shelves
 }
 ```
 
@@ -94,23 +97,33 @@ Carcass sits on the plinth: bottom panel underside at `y = plinthHeight`.
 
 - Interior zone: between bottom panel top and top panel underside, between
   the side panels, depth = cabinet depth − back thickness.
-- **Shelves**: `shelves` fixed shelves at equal vertical pitch within the
-  interior height measured at the column's lower side (`hLow`), so every
-  shelf fits under the slope: pitch = interior height / (shelves + 1).
-  Shelf depth = interior depth − 20 mm setback.
-- **Drawers**: `drawerCount` drawer fronts of equal height stacked from the
-  bottom, filling the rectangular zone from the carcass underside up to
-  `hLow` (outer), full-overlay with a 2 mm reveal at the column edges and
-  3 mm gaps between fronts. Above that, for `sloped` the remaining triangle
-  is a fixed front panel with the same reveal; for `stepped` there is no
-  fixed panel. Drawer boxes are not modelled beyond the front (cut list
-  lists fronts only; box parts are out of scope for v1).
-- **Door**: one door covering the whole column front; outline is the
-  column's front outline (trapezoid when sloped, rectangle when stepped),
-  minus a 2 mm reveal on all sides.
+- **Shelves** (`interior = shelves`): `shelves` fixed shelves at equal
+  vertical pitch within the interior height measured at the column's lower
+  side (`hLow`), so every shelf fits under the slope: pitch = interior
+  height / (shelves + 1). Shelf depth = interior depth − 20 mm setback.
+- **Drawers** (`interior = drawers`): `drawerCount` drawer fronts of equal
+  height stacked from the bottom with 3 mm gaps between fronts. Two builds:
+  - *Overlay* (`door = false`): fronts span the column width minus a 2 mm
+    reveal at the edges and sit in front of the carcass (z −t..0). Under a
+    `sloped` top the triangular space above `hLow` stays **open** as a
+    single shelf: a fixed shelf board (`nameKey: shelf`, standard 20 mm
+    setback) with its top surface at `hLow`; the drawer zone runs from the
+    carcass underside up to the shelf's underside minus the reveal
+    (`hLow − t − 2`). Under a `stepped` top there is no triangle: no top
+    shelf, and the zone runs up to `hLow − 2`. There is no fixed front
+    panel.
+  - *Internal* (`door = true`): fronts sit inside the carcass, flush with
+    its front edge (z 0..t), spanning the interior width minus a 3 mm gap
+    each side, filling the interior height at the low side minus 3 mm top
+    and bottom. No fixed front panel; the door covers the opening.
+  Drawer boxes are not modelled beyond the front (cut list lists fronts
+  only; box parts are out of scope for v1).
+- **Door** (`door = true`, any interior): one door covering the whole
+  column front; outline is the column's front outline (trapezoid when
+  sloped, rectangle when stepped), minus a 2 mm reveal on all sides.
 - **Rod**: 25 mm diameter rail across the column at `hLow - 200 mm`,
-  set 250 mm back from the front. Only when front is `none` or `door`. No
-  collision check against shelves in v1.
+  set 250 mm back from the front. Only when `interior = shelves`
+  (`rod` is ignored for drawers). No collision check against shelves in v1.
 - Plinth: one plinth board per column, height `plinthHeight`, set back 40 mm.
 
 ### 2.5 Validation
@@ -123,7 +136,19 @@ model stays rendered. Rules:
 - Sum of column widths `<= envelope.length`.
 - Every column: `width >= 2*panelThickness + 100`,
   `hLow >= plinthHeight + 2*panelThickness + 100`.
-- `drawerCount >= 1` when `front === 'drawers'`; shelves `>= 0`.
+- `drawerCount >= 1` when `interior === 'drawers'`; shelves `>= 0`.
+
+### 2.6 Internationalisation
+
+Two languages, `Lang = 'en' | 'ru'`. All user-visible strings come from typed
+dictionaries in `src/i18n/` (`en.ts` defines the key set, `ru.ts` must match it)
+through a pure `t(lang, key, params?)` with `{name}` interpolation. Data that
+carries text (part names, part notes, validation errors, import errors, toasts)
+carries a `Msg = { key, params? }` instead of a string and is translated at
+render time. Views and the PDF take `lang` as a parameter. The language lives
+in `ui.lang`, persisted separately from the project (`localStorage`
+`understairs-planner:lang`), defaulting from `navigator.language` (`ru*` → ru).
+The top bar has an `EN | RU` switch. Numbers keep a dot decimal separator.
 
 ## 3. Architecture
 
@@ -147,14 +172,16 @@ ui/        React components: Sidebar forms, Viewport3D, View2D, CutListTable
 interface Part {
   id: string;
   columnIndex: number | null;   // null for plinth/global parts
-  name: string;                 // e.g. "Side L", "Top", "Shelf 2", "Door", "Drawer front 3"
+  nameKey: 'sideL' | 'sideR' | 'top' | 'bottom' | 'back' | 'shelf' | 'door'
+         | 'drawerFront' | 'plinth' | 'rod';   // translated via i18n key `part.<nameKey>`
+  index?: number;               // 1-based for repeated parts (shelf, drawerFront)
   kind: 'side' | 'top' | 'bottom' | 'back' | 'shelf' | 'door' | 'drawerFront'
-      | 'fixedFront' | 'plinth' | 'rod';
+      | 'plinth' | 'rod';
   outline: Vec2[];              // polygon in the part's local XY plane, mm
   thickness: number;            // extrusion along local Z
   transform: { position: Vec3; rotation: Vec3 }; // Euler XYZ, radians
   material: 'panel' | 'back' | 'rod';
-  notes?: string[];             // e.g. "top edge bevel 35.2°"
+  notes?: Msg[];                // e.g. { key: 'note.bevelTopEdge', params: { deg: 35.2 } }
 }
 ```
 
@@ -178,7 +205,9 @@ into lines/arrows/text by a shared helper so SVG and PDF look identical.
 
 Views:
 - **Front elevation** (XY, looking at −Z): envelope outline (dashed), every
-  front-facing part, dims: total length, each column width, height at every
+  front-facing part; contents hidden behind a door (shelves, rod, internal
+  drawer fronts) are drawn as dashed hidden lines; the open top shelf above
+  overlay drawers is drawn solid; dims: total length, each column width, height at every
   column boundary (tall and low), plinth height, slope angle text.
 - **Plan** (XZ, looking down): envelope, carcass outlines, dims: total
   length, cabinet depth, envelope depth, gapBack, column widths.
@@ -194,7 +223,8 @@ Views:
 - SVG: `Drawing -> string` with a viewBox from bounds; used in the 2D tabs.
 - PDF: jsPDF, A4 landscape, drawing scaled to fit a content box, scale
   ratio printed as `1:N` (N rounded up to a standard: 5,10,20,25,50,100).
-  Standard Helvetica; ASCII labels only.
+  Embedded PT Sans Regular (OFL, Cyrillic + Latin) for all text in both
+  languages; `°` and `Ø` allowed.
 
 ### 3.4 PDF document
 
@@ -205,7 +235,7 @@ Views:
 6. Cut list table (auto-paginated): #, name, column, qty, length, width,
    thickness, material, notes.
 
-Cut list rows are grouped by identical (name-kind, dims, notes) with qty.
+Cut list rows are grouped by identical (nameKey, kind, dims, notes) with qty; names translated at render time.
 
 ### 3.5 3D viewport
 
@@ -220,18 +250,26 @@ by a factor), envelope visibility. Camera fits to envelope bounds on load.
 
 zustand store holds `{ project: { name, envelope, cabinet }, ui: {...} }`.
 Autosave `project` to `localStorage` (debounced). Toolbar: New (defaults),
-Export JSON (download), Import JSON (file input), Export PDF. Defaults are a
+Export JSON (download), Import JSON (file input), Export PDF. JSON files carry
+`version`; version 1 files (with `front: 'none' | 'door' | 'drawers'`) are
+migrated on read: `none` → shelves/no door, `door` → shelves/door,
+`drawers` → drawers/no door. Current version: 2. Defaults are a
 plausible sample (length 2600, heightMax 2200, heightMin 900, depth 900,
-four columns) so the app opens with something to look at.
+four columns: shelves+door+rod, 3 shelves+door, overlay drawers ×4, internal
+drawers ×3 behind a door) so the app opens with something to look at.
 
 ## 4. UI layout
 
 - Top bar: project name input, tab switch (3D | Front | Plan | Side | Cut list),
-  New / Import / Export JSON / Export PDF buttons.
+  New / Import / Export JSON / Export PDF buttons, `EN | RU` language switch.
 - Left sidebar (320 px, scrollable): Envelope section, Cabinet section,
-  Columns list — each column is a card with width/front/shelves/drawers/rod
-  and up/down/remove buttons; "Add column" appends a 500 mm `door` column
-  if it fits. A read-only line under each card shows derived `hTall/hLow`.
+  Columns list — each column is a card with width / interior (shelves or
+  drawers) / count / door / rod and left/right/remove buttons; "Add column"
+  appends a 500 mm shelves+door column if it fits (else the remaining width
+  if it is at least the minimum column width). A read-only line next to the
+  button shows the free width remaining (`envelope.length − Σ widths`), and
+  the button is disabled when nothing fits. A read-only line under each card
+  shows derived `hTall/hLow`.
 - Validation errors listed at the top of the sidebar in red.
 - Centre: the active tab content fills remaining space.
 

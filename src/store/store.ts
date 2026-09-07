@@ -2,7 +2,8 @@ import { create } from 'zustand';
 import type { Cabinet, Column, Envelope, Project, ValidationError } from '../model/types';
 import { defaultColumn, defaultProject } from '../model/defaults';
 import { validate } from '../model/validate';
-import { loadFromStorage, saveToStorage, type StorageLike } from './persist';
+import { detectLang, msg, type Lang, type Msg } from '../i18n';
+import { loadFromStorage, loadLang, saveLang, saveToStorage, type StorageLike } from './persist';
 
 export type Tab = '3d' | 'front' | 'plan' | 'side' | 'cutlist';
 
@@ -11,7 +12,8 @@ export interface UiState {
   showDims: boolean;
   explode: number; // 0..1
   showEnvelope: boolean;
-  toast: string | null;
+  toast: Msg | null;
+  lang: Lang;
 }
 
 export interface PlannerState {
@@ -30,16 +32,17 @@ export interface PlannerState {
   newProject: () => void;
   loadProject: (p: Project) => void;
   setUi: (patch: Partial<UiState>) => void;
-  toast: (msg: string | null) => void;
+  toast: (m: Msg | null) => void;
+  setLang: (lang: Lang) => void;
 }
 
-export function createPlannerStore(initial: Project = defaultProject()) {
+export function createPlannerStore(initial: Project = defaultProject(), lang: Lang = 'en') {
   const initialErrors = validate(initial);
   return create<PlannerState>()((set, get) => ({
     project: initial,
     errors: initialErrors,
     lastValid: initialErrors.length ? defaultProject() : initial,
-    ui: { tab: '3d', showDims: true, explode: 0, showEnvelope: true, toast: null },
+    ui: { tab: '3d', showDims: true, explode: 0, showEnvelope: true, toast: null, lang },
 
     setProject: (updater) =>
       set((s) => {
@@ -62,7 +65,7 @@ export function createPlannerStore(initial: Project = defaultProject()) {
       const minWidth = 2 * p.cabinet.panelThickness + 100;
       const width = remaining >= 500 ? 500 : remaining >= minWidth ? remaining : 0;
       if (width === 0) {
-        get().toast('No room for another column');
+        get().toast(msg('toast.noRoom'));
         return;
       }
       get().setProject((q) => ({ ...q, cabinet: { ...q.cabinet, columns: [...q.cabinet.columns, defaultColumn(width)] } }));
@@ -81,7 +84,8 @@ export function createPlannerStore(initial: Project = defaultProject()) {
     newProject: () => get().loadProject(defaultProject()),
     loadProject: (project) => set({ project, errors: validate(project), lastValid: project }),
     setUi: (patch) => set((s) => ({ ui: { ...s.ui, ...patch } })),
-    toast: (msg) => set((s) => ({ ui: { ...s.ui, toast: msg } })),
+    toast: (m) => set((s) => ({ ui: { ...s.ui, toast: m } })),
+    setLang: (lang) => set((s) => ({ ui: { ...s.ui, lang } })),
   }));
 }
 
@@ -90,6 +94,7 @@ export type PlannerStore = ReturnType<typeof createPlannerStore>;
 export function startAutosave(store: PlannerStore, storage: StorageLike, delay = 300): () => void {
   let timer: ReturnType<typeof setTimeout> | null = null;
   const unsub = store.subscribe((s, prev) => {
+    if (s.ui.lang !== prev.ui.lang) saveLang(storage, s.ui.lang);
     if (s.project === prev.project) return;
     if (timer) clearTimeout(timer);
     timer = setTimeout(() => saveToStorage(storage, s.project), delay);
@@ -101,5 +106,7 @@ export function startAutosave(store: PlannerStore, storage: StorageLike, delay =
 }
 
 const browserStorage: StorageLike | null = typeof localStorage !== 'undefined' ? localStorage : null;
-export const useStore = createPlannerStore((browserStorage && loadFromStorage(browserStorage)) ?? defaultProject());
+const initialLang: Lang =
+  (browserStorage && loadLang(browserStorage)) ?? detectLang(typeof navigator !== 'undefined' ? navigator.language : undefined);
+export const useStore = createPlannerStore((browserStorage && loadFromStorage(browserStorage)) ?? defaultProject(), initialLang);
 if (browserStorage) startAutosave(useStore, browserStorage);

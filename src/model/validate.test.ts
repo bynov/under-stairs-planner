@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { validate } from './validate';
 import { defaultProject } from './defaults';
+import { tm } from '../i18n';
 
 const paths = (p: ReturnType<typeof defaultProject>) => validate(p).map((e) => e.path);
 
@@ -43,6 +44,12 @@ describe('validate', () => {
     p.envelope.length = 0;
     const errs = validate(p);
     expect(errs.map((e) => e.path)).toContain('envelope.length');
-    expect(errs.every((e) => !e.message.includes('NaN'))).toBe(true);
+    expect(errs.every((e) => !tm('en', e.message).includes('NaN'))).toBe(true);
+  });
+  it('messages are i18n Msg objects with params', () => {
+    const p = defaultProject();
+    p.cabinet.columns[1].width = 100;
+    const e = validate(p).find((x) => x.path === 'cabinet.columns[1].width')!;
+    expect(e.message).toEqual({ key: 'error.columnWidth', params: { n: 2, min: 136 } });
   });
 });

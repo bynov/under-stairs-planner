@@ -5,6 +5,8 @@ Enter the closet envelope and the cabinet columns; get a 3D preview,
 dimensioned 2D views and a PDF scheme with a cut list. Runs entirely locally;
 the project autosaves to localStorage and can be exported/imported as JSON.
 
+Languages: English and Russian (switch in the top bar; the PDF embeds PT Sans, SIL OFL).
+
 ## Develop
 
     pnpm install
@@ -22,3 +24,8 @@ the project autosaves to localStorage and can be exported/imported as JSON.
 - `src/ui` React components (3D viewport under `src/ui/three`)
 
 Design spec: `docs/superpowers/specs/2026-09-07-understairs-closet-planner-design.md`.
+
+## Deploy
+
+Pushes to `main` build and publish to GitHub Pages via `.github/workflows/pages.yml`
+(Pages source must be "GitHub Actions"). Live: https://bynov.dev/under-stairs-planner/

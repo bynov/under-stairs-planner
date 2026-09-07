@@ -21,4 +21,12 @@ describe('buildPdf', () => {
   it('does not throw on a bad snapshot', () => {
     expect(() => buildPdf(defaultProject(), { snapshotPng: 'data:image/png;base64,not-a-png' })).not.toThrow();
   });
+  it('builds the Russian document with the embedded font and the same page count', () => {
+    const p = defaultProject();
+    const en = buildPdf(p, { lang: 'en' });
+    const ru = buildPdf(p, { lang: 'ru' });
+    expect(ru.getNumberOfPages()).toBe(en.getNumberOfPages());
+    expect(Object.keys(ru.getFontList())).toContain('PTSans');
+    expect(ru.getFont().fontName).toBe('PTSans');
+  });
 });

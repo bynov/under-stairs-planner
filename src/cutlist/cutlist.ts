@@ -1,9 +1,10 @@
-import type { Material, Part, PartKind } from '../geometry/parts';
+import type { Material, Part, PartKind, PartNameKey } from '../geometry/parts';
+import type { Msg } from '../i18n';
 import { bounds2 } from '../geometry/vec';
 import { ROD_DIAMETER } from '../geometry/column';
 
 export interface CutRow {
-  name: string;
+  nameKey: PartNameKey;
   kind: PartKind;
   columns: number[]; // 1-based
   qty: number;
@@ -11,7 +12,7 @@ export interface CutRow {
   width: number;
   thickness: number;
   material: Material;
-  notes: string[];
+  notes: Msg[];
 }
 
 const KIND_ORDER: PartKind[] = ['side', 'top', 'bottom', 'back', 'shelf', 'door', 'drawerFront', 'fixedFront', 'plinth', 'rod'];
@@ -31,21 +32,20 @@ export function buildCutList(parts: Part[]): CutRow[] {
     const { length, width } = partDims(part);
     const thickness = part.kind === 'rod' ? ROD_DIAMETER : r1(part.thickness);
     const notes = part.notes ?? [];
-    const baseName = part.name.replace(/ \d+$/, '');
-    const key = [part.kind, baseName, length, width, thickness, part.material, notes.join(';')].join('|');
+    const key = [part.kind, part.nameKey, length, width, thickness, part.material, JSON.stringify(notes)].join('|');
     const col = part.columnIndex === null ? [] : [part.columnIndex + 1];
     const row = groups.get(key);
     if (row) {
       row.qty += 1;
       for (const c of col) if (!row.columns.includes(c)) row.columns.push(c);
     } else {
-      groups.set(key, { name: baseName, kind: part.kind, columns: col, qty: 1, length, width, thickness, material: part.material, notes });
+      groups.set(key, { nameKey: part.nameKey, kind: part.kind, columns: col, qty: 1, length, width, thickness, material: part.material, notes });
     }
   }
   return [...groups.values()]
     .map((r) => ({ ...r, columns: [...r.columns].sort((a, b) => a - b) }))
     .sort((a, b) =>
       KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind) ||
-      a.name.localeCompare(b.name) ||
+      a.nameKey.localeCompare(b.nameKey) ||
       (a.columns[0] ?? 0) - (b.columns[0] ?? 0));
 }

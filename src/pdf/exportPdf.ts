@@ -7,8 +7,10 @@ import { buildCutList, type CutRow } from '../cutlist/cutlist';
 import { columnDetail, frontView, planView, sideView } from '../drawing/views';
 import type { Drawing } from '../drawing/ir';
 import { drawingToPdf, type PdfBox } from '../render/pdf';
+import { t, tm, type Lang, type MessageKey } from '../i18n';
+import { registerPdfFont } from './font';
 
-export interface PdfOptions { snapshotPng?: string | null; date?: Date }
+export interface PdfOptions { lang?: Lang; snapshotPng?: string | null; date?: Date }
 
 const W = 297, H = 210, M = 12;
 const BOX: PdfBox = { x: M, y: M + 10, w: W - 2 * M, h: H - 2 * M - 16 };
@@ -16,18 +18,19 @@ const ROW_H = 6;
 export const ROWS_PER_PAGE = 27;
 
 export function buildPdf(p: Project, opts: PdfOptions = {}): jsPDF {
+  const lang = opts.lang ?? 'en';
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-  doc.setFont('helvetica', 'normal');
-  summaryPage(doc, p, opts);
-  for (const d of [frontView(p), planView(p), sideView(p)]) {
+  registerPdfFont(doc);
+  summaryPage(doc, p, opts, lang);
+  for (const d of [frontView(p, lang), planView(p, lang), sideView(p, lang)]) {
     doc.addPage();
-    drawingPage(doc, d);
+    drawingPage(doc, d, lang);
   }
   layoutColumns(p).forEach((_, i) => {
     doc.addPage();
-    drawingPage(doc, columnDetail(p, i));
+    drawingPage(doc, columnDetail(p, i, lang), lang);
   });
-  cutListPages(doc, buildCutList(buildParts(p)));
+  cutListPages(doc, buildCutList(buildParts(p)), lang);
   return doc;
 }
 
@@ -42,33 +45,38 @@ function header(doc: jsPDF, title: string): void {
   doc.line(M, M + 7, W - M, M + 7);
 }
 
-function drawingPage(doc: jsPDF, d: Drawing): void {
+function drawingPage(doc: jsPDF, d: Drawing, lang: Lang): void {
   header(doc, d.title);
   const N = drawingToPdf(doc, d, BOX);
   doc.setFontSize(9);
-  doc.text(`Scale 1:${N} (mm)`, W - M, H - M / 2, { align: 'right' });
+  doc.text(t(lang, 'pdf.scale', { n: N }), W - M, H - M / 2, { align: 'right' });
 }
 
-function summaryPage(doc: jsPDF, p: Project, opts: PdfOptions): void {
-  header(doc, p.name || 'Under-stairs cabinet');
+function summaryPage(doc: jsPDF, p: Project, opts: PdfOptions, lang: Lang): void {
+  header(doc, p.name || t(lang, 'pdf.defaultTitle'));
   const date = (opts.date ?? new Date()).toISOString().slice(0, 10);
   const env = p.envelope, cab = p.cabinet;
   const columns = cab.columns
-    .map((c, i) => `${i + 1}: ${c.width} ${c.front}${c.front === 'drawers' ? ` x${c.drawerCount}` : ''}${c.shelves ? ` +${c.shelves} shelves` : ''}${c.rod && c.front !== 'drawers' ? ' rod' : ''}`)
+    .map((c, i) => [
+      `${i + 1}: ${c.width} ${t(lang, `ui.front.${c.front}` as MessageKey)}`,
+      c.front === 'drawers' ? t(lang, 'pdf.drawersCount', { n: c.drawerCount }) : '',
+      c.shelves ? t(lang, 'pdf.shelvesCount', { n: c.shelves }) : '',
+      c.rod && c.front !== 'drawers' ? t(lang, 'pdf.withRod') : '',
+    ].filter(Boolean).join(' '))
     .join('; ');
   const rows: [string, string][] = [
-    ['Date', date],
-    ['Envelope length', `${env.length}`],
-    ['Height max / min', `${env.heightMax} / ${env.heightMin}`],
-    ['Envelope depth', `${env.depth}`],
-    ['Slope', `${deg(slopeAngle(env))} deg`],
-    ['Tall side', env.tallSide],
-    ['Top clearance', `${env.topClearance}`],
-    ['Cabinet depth / min gap', `${cab.depth} / ${cab.gapBack}`],
-    ['Panel / back thickness', `${cab.panelThickness} / ${cab.backThickness}`],
-    ['Plinth height', `${cab.plinthHeight}`],
-    ['Top style', cab.topStyle],
-    ['Columns', columns || 'none'],
+    [t(lang, 'pdf.date'), date],
+    [t(lang, 'pdf.envelopeLength'), `${env.length}`],
+    [t(lang, 'pdf.heightMaxMin'), `${env.heightMax} / ${env.heightMin}`],
+    [t(lang, 'pdf.envelopeDepth'), `${env.depth}`],
+    [t(lang, 'pdf.slope'), t(lang, 'pdf.slopeValue', { deg: deg(slopeAngle(env)) })],
+    [t(lang, 'pdf.tallSide'), t(lang, `ui.side.${env.tallSide}` as MessageKey)],
+    [t(lang, 'pdf.topClearance'), `${env.topClearance}`],
+    [t(lang, 'pdf.cabinetDepthGap'), `${cab.depth} / ${cab.gapBack}`],
+    [t(lang, 'pdf.thickness'), `${cab.panelThickness} / ${cab.backThickness}`],
+    [t(lang, 'pdf.plinthHeight'), `${cab.plinthHeight}`],
+    [t(lang, 'pdf.topStyle'), t(lang, `ui.top.${cab.topStyle}` as MessageKey)],
+    [t(lang, 'pdf.columns'), columns || t(lang, 'pdf.none')],
   ];
   doc.setFontSize(10);
   let y = M + 16;
@@ -83,22 +91,22 @@ function summaryPage(doc: jsPDF, p: Project, opts: PdfOptions): void {
     try {
       doc.addImage(opts.snapshotPng, 'PNG', imgX, imgY, 120, 80);
     } catch {
-      doc.text('(3D snapshot unavailable)', imgX, imgY + 6);
+      doc.text(t(lang, 'pdf.snapshotFailed'), imgX, imgY + 6);
     }
   } else {
-    doc.text('(open the 3D tab before exporting to include a snapshot)', imgX, imgY + 6);
+    doc.text(t(lang, 'pdf.snapshotMissing'), imgX, imgY + 6);
   }
 }
 
-function cutListPages(doc: jsPDF, rows: CutRow[]): void {
+function cutListPages(doc: jsPDF, rows: CutRow[], lang: Lang): void {
   const cols: [string, number][] = [
-    ['#', M], ['Part', M + 10], ['Col', M + 58], ['Qty', M + 74], ['Length', M + 88],
-    ['Width', M + 108], ['Thk', M + 128], ['Material', M + 142], ['Notes', M + 166],
+    [t(lang, 'table.num'), M], [t(lang, 'table.part'), M + 10], [t(lang, 'table.col'), M + 58], [t(lang, 'table.qty'), M + 74], [t(lang, 'table.length'), M + 88],
+    [t(lang, 'table.width'), M + 108], [t(lang, 'table.thk'), M + 128], [t(lang, 'table.material'), M + 142], [t(lang, 'table.notes'), M + 166],
   ];
   const pages = Math.max(1, Math.ceil(rows.length / ROWS_PER_PAGE));
   for (let page = 0; page < pages; page++) {
     doc.addPage();
-    header(doc, page === 0 ? 'Cut list' : `Cut list (cont. ${page + 1})`);
+    header(doc, page === 0 ? t(lang, 'pdf.cutList') : t(lang, 'pdf.cutListCont', { n: page + 1 }));
     doc.setFontSize(9);
     let y = M + 14;
     for (const [name, x] of cols) doc.text(name, x, y);
@@ -106,8 +114,8 @@ function cutListPages(doc: jsPDF, rows: CutRow[]): void {
     const start = page * ROWS_PER_PAGE;
     rows.slice(start, start + ROWS_PER_PAGE).forEach((r, j) => {
       const vals = [
-        String(start + j + 1), r.name, r.columns.join(','), String(r.qty), String(r.length),
-        String(r.width), String(r.thickness), r.material, r.notes.join('; ').slice(0, 55),
+        String(start + j + 1), t(lang, `part.${r.nameKey}` as MessageKey), r.columns.join(','), String(r.qty), String(r.length),
+        String(r.width), String(r.thickness), t(lang, `material.${r.material}` as MessageKey), r.notes.map((n) => tm(lang, n)).join('; ').slice(0, 55),
       ];
       vals.forEach((v, k) => doc.text(v, cols[k][1], y));
       y += ROW_H;
@@ -115,5 +123,5 @@ function cutListPages(doc: jsPDF, rows: CutRow[]): void {
   }
   const total = rows.reduce((s, r) => s + r.qty, 0);
   doc.setFontSize(9);
-  doc.text(`Total parts: ${total}`, W - M, H - M / 2, { align: 'right' });
+  doc.text(t(lang, 'pdf.total', { n: total }), W - M, H - M / 2, { align: 'right' });
 }

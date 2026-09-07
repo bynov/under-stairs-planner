@@ -7,6 +7,7 @@ import { layoutColumns } from '../../geometry/column';
 import { setSnapshotter } from '../snapshot';
 import { PartMesh } from './PartMesh';
 import { EnvelopeMesh } from './EnvelopeMesh';
+import { useT } from '../useT';
 
 function SnapshotBridge() {
   const gl = useThree((s) => s.gl);
@@ -34,6 +35,7 @@ export function Viewport3D() {
   const project = useStore((s) => s.lastValid);
   const ui = useStore((s) => s.ui);
   const setUi = useStore((s) => s.setUi);
+  const { t } = useT();
   const parts = useMemo(() => buildParts(project), [project]);
   const cols = useMemo(() => layoutColumns(project), [project]);
   const env = project.envelope;
@@ -62,9 +64,9 @@ export function Viewport3D() {
         <OrbitControls makeDefault target={[env.length / 2, env.heightMax / 2, env.depth / 2]} />
       </Canvas>
       <div className="controls">
-        <label><input type="checkbox" checked={ui.showDims} onChange={(e) => setUi({ showDims: e.target.checked })} /> Dims</label>
-        <label><input type="checkbox" checked={ui.showEnvelope} onChange={(e) => setUi({ showEnvelope: e.target.checked })} /> Envelope</label>
-        <label>Explode <input type="range" min={0} max={1} step={0.05} value={ui.explode} onChange={(e) => setUi({ explode: e.target.valueAsNumber })} /></label>
+        <label><input type="checkbox" checked={ui.showDims} onChange={(e) => setUi({ showDims: e.target.checked })} /> {t('ui.dims')}</label>
+        <label><input type="checkbox" checked={ui.showEnvelope} onChange={(e) => setUi({ showEnvelope: e.target.checked })} /> {t('ui.envelope')}</label>
+        <label>{t('ui.explode')} <input type="range" min={0} max={1} step={0.05} value={ui.explode} onChange={(e) => setUi({ explode: e.target.valueAsNumber })} /></label>
       </div>
     </div>
   );

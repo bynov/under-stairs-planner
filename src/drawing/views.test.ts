@@ -15,7 +15,7 @@ describe('frontView', () => {
   it('has title, envelope, column widths, heights, plinth and slope', () => {
     expect(d.title).toBe('Front elevation');
     for (const v of [2500, 2600, 700, 600, 2180, 1830, 930, 100]) expect(hasDim(d, v)).toBe(true);
-    expect(texts(d)).toContain('slope 26.6 deg');
+    expect(texts(d)).toContain('slope 26.6°');
     expect(d.bounds.min.x).toBeLessThan(0);
     expect(d.bounds.max.y).toBeGreaterThan(2200);
   });
@@ -73,5 +73,19 @@ describe('columnDetail', () => {
   it('rod column: rod height dim', () => {
     const d = columnDetail(p, 0);
     expect(hasDim(d, 1630)).toBe(true);
+  });
+});
+
+describe('russian views', () => {
+  const p = defaultProject();
+  it('translate titles and labels', () => {
+    expect(frontView(p, 'ru').title).toBe('Фасад');
+    expect(texts(frontView(p, 'ru'))).toContain('уклон 26.6°');
+    expect(planView(p, 'ru').title).toBe('План');
+    expect(sideView(p, 'ru').title).toBe('Разрез (высокая сторона)');
+    const d = columnDetail(p, 1, 'ru');
+    expect(d.title).toBe('Секция 2 — деталировка');
+    expect(texts(d)).toContain('Фасад');
+    expect(hasDim(d, 564)).toBe(true); // geometry unchanged
   });
 });

@@ -1,3 +1,5 @@
+import type { Msg } from '../i18n';
+
 export type TallSide = 'left' | 'right';
 export type TopStyle = 'sloped' | 'stepped';
 export type FrontKind = 'none' | 'door' | 'drawers';
@@ -38,5 +40,5 @@ export interface Project {
 
 export interface ValidationError {
   path: string;
-  message: string;
+  message: Msg;
 }

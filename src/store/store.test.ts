@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createPlannerStore, startAutosave } from './store';
-import { serializeProject, parseProjectJson, loadFromStorage } from './persist';
+import { serializeProject, parseProjectJson, loadFromStorage, loadLang } from './persist';
 import { defaultProject } from '../model/defaults';
 
 const memStorage = () => {
@@ -23,7 +23,7 @@ describe('store', () => {
     const s = createPlannerStore();
     s.getState().addColumn(); // 2500 of 2600 used: remainder 100 < min 136
     expect(s.getState().project.cabinet.columns).toHaveLength(4);
-    expect(s.getState().ui.toast).toMatch(/No room/);
+    expect(s.getState().ui.toast).toEqual({ key: 'toast.noRoom' });
     s.getState().setEnvelope({ length: 3000 });
     s.getState().addColumn();
     expect(s.getState().project.cabinet.columns[4].width).toBe(500);
@@ -83,7 +83,18 @@ describe('persist', () => {
     p.cabinet.depth = 5000;
     const r = parseProjectJson(serializeProject(p));
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.error).toMatch(/validation/);
+    if (!r.ok) expect(r.error.key).toBe('error.failsValidation');
+  });
+  it('persists the language immediately and restores it', () => {
+    const storage = memStorage();
+    const s = createPlannerStore(defaultProject(), 'en');
+    const stop = startAutosave(s, storage, 100);
+    expect(s.getState().ui.lang).toBe('en');
+    s.getState().setLang('ru');
+    expect(loadLang(storage)).toBe('ru');
+    stop();
+    storage.setItem('understairs-planner:lang', 'xx');
+    expect(loadLang(storage)).toBeNull();
   });
   it('loadFromStorage returns null for empty or corrupt storage', () => {
     const storage = memStorage();
