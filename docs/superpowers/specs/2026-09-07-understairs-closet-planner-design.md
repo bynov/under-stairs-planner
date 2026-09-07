@@ -1,7 +1,7 @@
 # Under-Stairs Closet Planner — Design Spec
 
 Date: 2026-09-07
-Status: approved (chat), pending implementation plan
+Status: approved (chat), self-reviewed 2026-09-07, pending implementation plan
 
 ## 1. Goal
 
@@ -74,12 +74,17 @@ For column at `[x0, x1]`:
 
 - `hTall = ceilY(x0) - topClearance`, `hLow = ceilY(x1) - topClearance`.
 - `topStyle === 'sloped'`: carcass top follows the slope between `hTall` and
-  `hLow`. Sides are trapezoids. Top panel is a rectangle of length
-  `(x1 - x0) / cos(theta)` (measured along the slope) x cabinet depth, with its
-  long edges bevelled at `theta` (noted in cut list; not modelled in 3D beyond
-  the rotated box).
+  `hLow`. The slope runs along X, so a side panel (YZ plane) has constant
+  height and is a **rectangle**: left side outer height `hTall`, right side
+  `hLow`, each reduced by `panelThickness / cos(theta)` so the top panel
+  rests on it; both top edges bevelled at `theta` (cut-list note; 3D shows a
+  plain rectangle). Top panel is a rectangle of length
+  `(x1 - x0) / cos(theta)` (measured along the slope) x cabinet depth, with
+  its two end edges (the ones meeting the sides) bevelled at `theta`
+  (cut-list note; 3D shows the rotated box). Back panel and fronts are
+  trapezoids.
 - `topStyle === 'stepped'`: carcass top is horizontal at `hLow`. Sides are
-  rectangles.
+  equal rectangles; back panel and fronts are rectangles.
 
 Carcass sits on the plinth: bottom panel underside at `y = plinthHeight`.
 
@@ -89,17 +94,21 @@ Carcass sits on the plinth: bottom panel underside at `y = plinthHeight`.
   the side panels, depth = cabinet depth − back thickness.
 - **Shelves**: `shelves` fixed shelves at equal vertical pitch within the
   interior height measured at the column's lower side (`hLow`), so every
-  shelf fits under the slope. Shelf depth = interior depth − 20 mm setback.
+  shelf fits under the slope: pitch = interior height / (shelves + 1).
+  Shelf depth = interior depth − 20 mm setback.
 - **Drawers**: `drawerCount` drawer fronts of equal height stacked from the
-  bottom, filling the rectangular zone up to `hLow` (outer). Above that, the
-  remaining triangle (sloped) is a fixed front panel. Drawer boxes are not
-  modelled beyond the front (cut list lists fronts only; box parts are out of
-  scope for v1).
+  bottom, filling the rectangular zone from the carcass underside up to
+  `hLow` (outer), full-overlay with a 2 mm reveal at the column edges and
+  3 mm gaps between fronts. Above that, for `sloped` the remaining triangle
+  is a fixed front panel with the same reveal; for `stepped` there is no
+  fixed panel. Drawer boxes are not modelled beyond the front (cut list
+  lists fronts only; box parts are out of scope for v1).
 - **Door**: one door covering the whole column front; outline is the
   column's front outline (trapezoid when sloped, rectangle when stepped),
   minus a 2 mm reveal on all sides.
-- **Rod**: 25 mm diameter rail across the column at `min(hLow) - 200 mm`,
-  set 250 mm back from the front. Only when front is `none` or `door`.
+- **Rod**: 25 mm diameter rail across the column at `hLow - 200 mm`,
+  set 250 mm back from the front. Only when front is `none` or `door`. No
+  collision check against shelves in v1.
 - Plinth: one plinth board per column, height `plinthHeight`, set back 40 mm.
 
 ### 2.5 Validation
@@ -147,7 +156,7 @@ interface Part {
 }
 ```
 
-Sides: local XY = the trapezoid, extruded along X. Top/bottom/shelves: local
+Sides: local XY = the YZ rectangle (depth x height), extruded along X. Top/bottom/shelves: local
 XY = plan rectangle, extruded along Y (top rotated by `theta` when sloped).
 Fronts/back: local XY = elevation outline, extruded along Z.
 
@@ -171,8 +180,9 @@ Views:
   column boundary (tall and low), plinth height, slope angle text.
 - **Plan** (XZ, looking down): envelope, carcass outlines, dims: total
   length, cabinet depth, envelope depth, gapBack, column widths.
-- **Side section** (YZ at the tall end): envelope triangle side, first
-  column section with shelves/plinth, dims: heights, depth, plinth.
+- **Side section** (YZ at the tall end): envelope section (rectangle
+  `depth` x `heightMax` at x = 0, back wall dashed), first column section
+  with shelves/plinth/rod, dims: heights, depth, gapBack, plinth.
 - **Column detail** (per column): front + section side-by-side with
   internal dims (interior width/height, shelf pitch, drawer front heights,
   rod height).
