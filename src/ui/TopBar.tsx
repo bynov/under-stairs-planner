@@ -19,6 +19,7 @@ export function TopBar() {
   const project = useStore((s) => s.project);
   const lastValid = useStore((s) => s.lastValid);
   const tab = useStore((s) => s.ui.tab);
+  const sidebarOpen = useStore((s) => s.ui.sidebarOpen);
   const { lang, t } = useT();
   const { setName, setUi, newProject, loadProject, toast, setLang } = useStore.getState();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -56,10 +57,11 @@ export function TopBar() {
 
   return (
     <header className="topbar">
+      <button className="mobile-only" onClick={() => setUi({ sidebarOpen: !sidebarOpen })}>{t('ui.edit')}</button>
       <input className="name" value={project.name} onChange={(e) => setName(e.target.value)} placeholder={t('ui.projectName')} />
       <nav className="tabs">
         {TABS.map((tb) => (
-          <button key={tb.key} className={tb.key === tab ? 'active' : ''} onClick={() => setUi({ tab: tb.key })}>
+          <button key={tb.key} className={tb.key === tab ? 'active' : ''} onClick={() => setUi({ tab: tb.key, sidebarOpen: false })}>
             {t(tb.labelKey)}
           </button>
         ))}

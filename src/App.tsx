@@ -10,9 +10,10 @@ import { Viewport3D } from './ui/three/Viewport3D';
 export function App() {
   const tab = useStore((s) => s.ui.tab);
   const lang = useStore((s) => s.ui.lang);
+  const sidebarOpen = useStore((s) => s.ui.sidebarOpen);
   useEffect(() => { document.documentElement.lang = lang; }, [lang]);
   return (
-    <div className="app">
+    <div className={`app${sidebarOpen ? ' sidebar-open' : ''}`}>
       <TopBar />
       <div className="main">
         <Sidebar />

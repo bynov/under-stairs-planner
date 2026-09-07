@@ -13,6 +13,8 @@ export const ru: Record<MessageKey, string> = {
   'ui.exportPdf': 'Экспорт PDF',
   'ui.exporting': 'Экспорт...',
   'ui.confirmNew': 'Заменить текущий проект проектом по умолчанию?',
+  'ui.edit': 'Изменить',
+  'ui.close': 'Закрыть',
   'ui.lang.en': 'EN',
   'ui.lang.ru': 'RU',
   'ui.section.envelope': 'Ниша',

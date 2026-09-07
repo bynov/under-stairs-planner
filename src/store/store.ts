@@ -12,6 +12,7 @@ export interface UiState {
   showDims: boolean;
   explode: number; // 0..1
   showEnvelope: boolean;
+  sidebarOpen: boolean; // mobile overlay panel
   toast: Msg | null;
   lang: Lang;
 }
@@ -42,7 +43,7 @@ export function createPlannerStore(initial: Project = defaultProject(), lang: La
     project: initial,
     errors: initialErrors,
     lastValid: initialErrors.length ? defaultProject() : initial,
-    ui: { tab: '3d', showDims: true, explode: 0, showEnvelope: true, toast: null, lang },
+    ui: { tab: '3d', showDims: true, explode: 0, showEnvelope: true, sidebarOpen: false, toast: null, lang },
 
     setProject: (updater) =>
       set((s) => {

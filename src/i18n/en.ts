@@ -12,6 +12,8 @@ export const en = {
   'ui.exportPdf': 'Export PDF',
   'ui.exporting': 'Exporting...',
   'ui.confirmNew': 'Replace the current project with the defaults?',
+  'ui.edit': 'Edit',
+  'ui.close': 'Close',
   'ui.lang.en': 'EN',
   'ui.lang.ru': 'RU',
   // sidebar

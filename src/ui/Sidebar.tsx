@@ -9,6 +9,7 @@ export function Sidebar() {
   const setEnvelope = useStore((s) => s.setEnvelope);
   const setCabinet = useStore((s) => s.setCabinet);
   const addColumn = useStore((s) => s.addColumn);
+  const setUi = useStore((s) => s.setUi);
   const { t, tm } = useT();
   const { envelope: env, cabinet: cab } = project;
   const used = cab.columns.reduce((s, c) => s + c.width, 0);
@@ -16,6 +17,7 @@ export function Sidebar() {
   const minWidth = 2 * cab.panelThickness + 100;
   return (
     <aside className="sidebar">
+      <button className="mobile-only close" onClick={() => setUi({ sidebarOpen: false })}>{t('ui.close')}</button>
       {errors.length > 0 && (
         <div className="errors">
           {errors.map((e, i) => <div key={i}>{tm(e.message)}</div>)}
