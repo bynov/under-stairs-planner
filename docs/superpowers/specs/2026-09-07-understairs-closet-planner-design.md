@@ -49,7 +49,7 @@ interface Cabinet {
   backThickness: number;    // default 4
   plinthHeight: number;     // default 100
   depth: number;            // cabinet depth, <= envelope.depth - gapBack
-  gapBack: number;          // gap between cabinet back and back wall
+  gapBack: number;          // minimum gap between cabinet back and back wall; cabinet front stays at z = 0
   topStyle: 'sloped' | 'stepped';
   columns: Column[];
 }
@@ -75,9 +75,11 @@ For column at `[x0, x1]`:
 - `hTall = ceilY(x0) - topClearance`, `hLow = ceilY(x1) - topClearance`.
 - `topStyle === 'sloped'`: carcass top follows the slope between `hTall` and
   `hLow`. The slope runs along X, so a side panel (YZ plane) has constant
-  height and is a **rectangle**: left side outer height `hTall`, right side
-  `hLow`, each reduced by `panelThickness / cos(theta)` so the top panel
-  rests on it; both top edges bevelled at `theta` (cut-list note; 3D shows a
+  height and is a **rectangle**: each side is cut to the long point of its
+  bevelled top edge: left side `ceilTop(x0) - panelThickness / cos(theta)`,
+  right side `ceilTop(x1 - panelThickness) - panelThickness / cos(theta)`,
+  where `ceilTop(x)` is the outer cabinet top height at x, measured from the
+  plinth top; both top edges bevelled at `theta` (cut-list note; 3D shows a
   plain rectangle). Top panel is a rectangle of length
   `(x1 - x0) / cos(theta)` (measured along the slope) x cabinet depth, with
   its two end edges (the ones meeting the sides) bevelled at `theta`
