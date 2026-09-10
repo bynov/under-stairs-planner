@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { Cabinet, Column, Envelope, Project, ValidationError } from '../model/types';
 import { defaultColumn, defaultProject } from '../model/defaults';
 import { validate } from '../model/validate';
-import { detectLang, msg, type Lang, type Msg } from '../i18n';
+import { detectLang, msg, readLangFromUrl, type Lang, type Msg } from '../i18n';
 import { loadFromStorage, loadLang, saveLang, saveToStorage, type StorageLike } from './persist';
 
 export type Tab = '3d' | 'front' | 'plan' | 'side' | 'cutlist';
@@ -107,7 +107,34 @@ export function startAutosave(store: PlannerStore, storage: StorageLike, delay =
 }
 
 const browserStorage: StorageLike | null = typeof localStorage !== 'undefined' ? localStorage : null;
-const initialLang: Lang =
-  (browserStorage && loadLang(browserStorage)) ?? detectLang(typeof navigator !== 'undefined' ? navigator.language : undefined);
-export const useStore = createPlannerStore((browserStorage && loadFromStorage(browserStorage)) ?? defaultProject(), initialLang);
+
+function initialLanguage(): Lang {
+  const fromUrl = typeof location !== 'undefined' ? readLangFromUrl(location.search) : null;
+  const hasLangParam = typeof location !== 'undefined' && new URLSearchParams(location.search).has('lang');
+  const hasShot = typeof location !== 'undefined' && new URLSearchParams(location.search).has('shot');
+  if (fromUrl && browserStorage) saveLang(browserStorage, fromUrl);
+  if ((fromUrl || hasLangParam || hasShot) && typeof history !== 'undefined' && typeof location !== 'undefined') {
+    const url = new URL(location.href);
+    url.searchParams.delete('lang');
+    url.searchParams.delete('shot');
+    history.replaceState(null, '', url.pathname + url.search + url.hash);
+  }
+  return fromUrl ?? ((browserStorage && loadLang(browserStorage)) ?? detectLang(typeof navigator !== 'undefined' ? navigator.language : undefined));
+}
+
+const SHOT_TABS: readonly Tab[] = ['3d', 'front', 'plan', 'side', 'cutlist'];
+
+function initialShot(): Tab | null {
+  if (typeof location === 'undefined') return null;
+  const raw = new URLSearchParams(location.search).get('shot');
+  return raw && (SHOT_TABS as readonly string[]).includes(raw) ? (raw as Tab) : null;
+}
+
+const shotParam = initialShot();
+
+export const useStore = createPlannerStore((browserStorage && loadFromStorage(browserStorage)) ?? defaultProject(), initialLanguage());
+
+if (shotParam) {
+  useStore.setState((s) => ({ ui: { ...s.ui, tab: shotParam } }));
+}
 if (browserStorage) startAutosave(useStore, browserStorage);

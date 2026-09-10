@@ -5,7 +5,7 @@ import { exportPdfBlob } from '../pdf/exportPdf';
 import { downloadBlob } from './download';
 import { takeSnapshot } from './snapshot';
 import { useT } from './useT';
-import { LANGS, type MessageKey } from '../i18n';
+import { LANGS, type Lang, type MessageKey } from '../i18n';
 
 const TABS: { key: Tab; labelKey: MessageKey }[] = [
   { key: '3d', labelKey: 'ui.tab.3d' },
@@ -57,6 +57,7 @@ export function TopBar() {
 
   return (
     <header className="topbar">
+      <a className="brand" href={lang === 'en' ? '/' : `/${lang}/`} title={t('ui.appTitle')}>⌂</a>
       <button className="mobile-only" onClick={() => setUi({ sidebarOpen: !sidebarOpen })}>{t('ui.edit')}</button>
       <input className="name" value={project.name} onChange={(e) => setName(e.target.value)} placeholder={t('ui.projectName')} />
       <nav className="tabs">
@@ -66,11 +67,11 @@ export function TopBar() {
           </button>
         ))}
       </nav>
-      <nav className="tabs lang">
+      <select className="lang-select" value={lang} onChange={(e) => setLang(e.target.value as Lang)} aria-label="Language">
         {LANGS.map((l) => (
-          <button key={l} className={l === lang ? 'active' : ''} onClick={() => setLang(l)}>{t(`ui.lang.${l}` as MessageKey)}</button>
+          <option key={l} value={l}>{t(`ui.lang.${l}` as MessageKey)}</option>
         ))}
-      </nav>
+      </select>
       <span className="spacer" />
       <button onClick={onNew}>{t('ui.new')}</button>
       <button onClick={() => fileRef.current?.click()}>{t('ui.importJson')}</button>

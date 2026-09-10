@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="{{lang}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{title}}</title>
+<meta name="description" content="{{description}}">
+<link rel="canonical" href="{{url}}">
+{{alternates}}
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="{{brand}}">
+<meta property="og:title" content="{{title}}">
+<meta property="og:description" content="{{description}}">
+<meta property="og:url" content="{{url}}">
+<meta property="og:image" content="{{site}}/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="{{ogLocale}}">
+{{ogAlternates}}
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{title}}">
+<meta name="twitter:description" content="{{description}}">
+<meta name="twitter:image" content="{{site}}/og.png">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="#2b6cb0">
+{{verification}}
+<link rel="stylesheet" href="/site/site.css">
+{{jsonld}}
+{{analytics}}
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="{{homeUrl}}">{{brand}}</a>
+  <nav aria-label="Main">
+    <a href="{{homeUrl}}"{{navHomeCurrent}}>{{navHome}}</a>
+    <a href="{{measureUrl}}"{{navMeasureCurrent}}>{{navMeasure}}</a>
+    <a href="{{faqUrl}}"{{navFaqCurrent}}>{{navFaq}}</a>
+  </nav>
+  <a class="cta" href="{{appUrl}}">{{navApp}}</a>
+</header>
+<main>
+{{main}}
+</main>
+<footer>
+  <nav class="langs" aria-label="{{footerLangs}}">{{langLinks}}</nav>
+  <p><a href="{{repo}}">{{footerSource}}</a> · <a href="{{repo}}/issues">{{footerIssue}}</a> · <a href="{{repo}}/blob/main/LICENSE">{{footerLicense}}</a></p>
+</footer>
+</body>
+</html>
