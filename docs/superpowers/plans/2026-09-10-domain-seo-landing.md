@@ -1299,7 +1299,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 pnpm typecheck && pnpm test && pnpm build
 pnpm preview &
 sleep 2
-curl -s http://localhost:4173/ | grep -c 'hreflang'        # expect 6
+curl -s http://localhost:4173/ | grep -c 'hreflang'        # expect 11 (6 link alternates + 5 footer links)
 curl -s http://localhost:4173/de/faq/ | grep -o '<html lang="de">'
 curl -s http://localhost:4173/app/ | grep -o '<title>[^<]*'
 curl -s http://localhost:4173/sitemap.xml | grep -c '<loc>' # expect 16

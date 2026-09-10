@@ -1,0 +1,29 @@
+:root { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 16px; line-height: 1.5; color: #1f2937; background: #fff; }
+body { margin: 0; }
+a { color: #2b6cb0; }
+header.top, main, footer { max-width: 960px; margin: 0 auto; padding: 0 20px; box-sizing: border-box; }
+header.top { display: flex; align-items: center; gap: 20px; padding-block: 14px; flex-wrap: wrap; }
+header.top .brand { font-weight: 700; text-decoration: none; color: #111; }
+header.top nav { display: flex; gap: 14px; flex: 1; }
+header.top nav a { text-decoration: none; color: #374151; }
+header.top nav a[aria-current] { color: #2b6cb0; font-weight: 600; }
+.cta { display: inline-block; background: #2b6cb0; color: #fff !important; text-decoration: none; padding: 10px 18px; border-radius: 6px; font-weight: 600; }
+.cta.big { font-size: 1.15rem; padding: 14px 26px; }
+.hero { padding-block: 40px 24px; }
+.hero h1 { font-size: 2.2rem; line-height: 1.15; margin: 0 0 12px; }
+.hero .lead { font-size: 1.15rem; max-width: 720px; color: #374151; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; margin-block: 24px; }
+.grid h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.grid p { margin: 0; color: #4b5563; }
+.shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-block: 24px; }
+.shots img { width: 100%; height: auto; border: 1px solid #e5e7eb; border-radius: 6px; }
+section { margin-block: 36px; }
+h2 { font-size: 1.5rem; margin: 0 0 12px; }
+ol.steps { padding-left: 22px; } ol.steps li { margin-bottom: 12px; } ol.steps h3 { margin: 0 0 4px; font-size: 1.05rem; }
+.faq details { border-top: 1px solid #e5e7eb; padding: 10px 0; }
+.faq summary { cursor: pointer; font-weight: 600; }
+.faq details p { margin: 8px 0 0; color: #374151; }
+footer { padding-block: 32px; border-top: 1px solid #e5e7eb; margin-top: 48px; color: #6b7280; font-size: 0.95rem; }
+footer .langs { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+footer .langs a[aria-current] { font-weight: 600; color: #111; text-decoration: none; }
+@media (max-width: 600px) { .hero h1 { font-size: 1.7rem; } header.top nav { order: 3; width: 100%; } }

@@ -8,6 +8,7 @@ pnpm only (lockfile + `pnpm-workspace.yaml`; CI uses pnpm 11 / Node 22).
 
 ```bash
 pnpm install
+pnpm site                     # regenerate landing pages (runs automatically before dev/build)
 pnpm dev                      # Vite dev server, http://localhost:5173
 pnpm test                     # vitest run (all src/**/*.test.ts, node environment)
 pnpm vitest run src/geometry/column.test.ts     # single file
@@ -17,9 +18,9 @@ pnpm build                    # typecheck + vite build -> dist/
 pnpm embed-font               # regenerate src/pdf/fonts/ptsans.ts from the TTF (only if the font changes)
 ```
 
-CI (`.github/workflows/pages.yml`) runs `pnpm test` then `pnpm build` with `BASE_PATH=/<repo>/` and deploys `dist/` to GitHub Pages on every push to `main`. Keep both green before pushing.
+CI (`.github/workflows/pages.yml`) runs `pnpm test` then `pnpm build` (with `SITE_GSC_TOKEN` / `SITE_CF_BEACON` secrets, empty allowed) and deploys `dist/` to GitHub Pages on every push to `main`. The custom domain is configured in GitHub → Settings → Pages (see the rollout checklist in README.md); `public/CNAME` is kept in the artifact for consistency. Keep both green before pushing.
 
-Tests run in a `node` environment: no DOM, no WebGL. Anything under `src/ui` is untested by design; keep logic out of components and in the pure modules so it can be tested.
+Tests run in a `node` environment: no DOM, no WebGL. This covers both `src/**/*.test.ts` and `site/**/*.test.ts`. Anything under `src/ui` is untested by design; keep logic out of components and in the pure modules so it can be tested.
 
 ## Architecture: one Part list, many outputs
 
@@ -46,6 +47,10 @@ Conventions that everything relies on:
 - A `Part` is a local-XY polygon extruded along local +Z by `thickness`, placed by a single `{position, rotation}` transform (`src/geometry/vec.ts` has the rotation constants `FLAT_ROT`, `SIDE_ROT`, `NO_ROT`, `ROD_ROT`). Add new cabinet parts by adding to `buildParts`; the cut list and 3D pick them up automatically. Drawings do not: they draw from `ColumnLayout` via `columnFrontPrims`/`columnSectionPrims`.
 - Sloped top: top panel is one rotated rect (`w / cos θ`), side and back panels are trapezoids, and bevel/trapezoid notes are attached as `Msg[]` on the Part so they flow to the cut list and PDF.
 - Drawing `dim` prims are expanded lazily (`expandPrims`/`expandDim`) at render time; bounds are computed including text extents.
+
+## Static site
+
+`site/generate.mjs` renders `site/template.html` × `site/content.mjs` into repo-root HTML (`index.html`, `faq/`, `how-to-measure/`, `<lang>/…`) that Vite's MPA build copies 1:1 to `dist/`. Those paths are gitignored; edit `site/content.mjs`, never the output. The app lives at `app/index.html` → `/app/`. Env `SITE_GSC_TOKEN` / `SITE_CF_BEACON` gate the Search Console meta and Cloudflare beacon.
 
 ## State and validation
 

@@ -30,7 +30,8 @@ jobs:
       - run: pnpm test
       - run: pnpm build
         env:
-          BASE_PATH: /${{ github.event.repository.name }}/
+          SITE_GSC_TOKEN: ${{ secrets.SITE_GSC_TOKEN }}
+          SITE_CF_BEACON: ${{ secrets.SITE_CF_BEACON }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

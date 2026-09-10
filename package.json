@@ -1,16 +1,21 @@
 {
-  "name": "understairs-planner",
+  "name": "understairs-storage-planner",
   "private": true,
   "license": "MIT",
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "site": "node site/generate.mjs",
+    "predev": "pnpm site",
+    "prebuild": "pnpm site",
+    "pretest": "pnpm site",
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "embed-font": "node scripts/embed-font.mjs"
+    "embed-font": "node scripts/embed-font.mjs",
+    "assets": "bash scripts/screenshots.sh"
   },
   "dependencies": {
     "@react-three/drei": "^9.122.0",
