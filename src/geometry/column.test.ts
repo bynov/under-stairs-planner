@@ -79,6 +79,12 @@ describe('layoutColumns (default project, sloped)', () => {
     expect(L[0].rodY).toBe(1630);
     expect(L[1].rodY).toBeNull();
   });
+  it('rod column gets the open top shelf in the triangle, like overlay drawers', () => {
+    const c = L[0];
+    expect(c.topShelfY).toBeCloseTo(c.floorY + c.interiorHeight, 8);
+    expect(c.topShelfY! - 18).toBeGreaterThan(c.rodY!); // shelf underside clears the rod
+    expect(L[1].topShelfY).toBeNull(); // plain shelves: no extra shelf
+  });
   it('invariant: the open top shelf never sits inside the top panel and always clears the drawer zone', () => {
     for (const heightMin of [0, 300, 900, 1500]) {
       const p = defaultProject();
@@ -87,6 +93,7 @@ describe('layoutColumns (default project, sloped)', () => {
       for (const c of cols) {
         if (c.topShelfY === null) continue;
         expect(c.topShelfY).toBeLessThanOrEqual(c.floorY + c.interiorHeight + 1e-9);
+        if (c.rodY !== null) { expect(c.topShelfY - p.cabinet.panelThickness).toBeGreaterThan(c.rodY); continue; }
         const lastFront = c.drawerFronts[c.drawerFronts.length - 1];
         expect(c.topShelfY - p.cabinet.panelThickness)
           .toBeGreaterThanOrEqual(lastFront.y1 + p.cabinet.plinthHeight + REVEAL - 1e-9);
@@ -114,5 +121,6 @@ describe('layoutColumns (stepped)', () => {
     const c = layoutColumns(p)[2];
     expect(c.topShelfY).toBeNull();
     expect(c.drawerFronts[3].y1).toBeCloseTo(1230 - 100 - 2, 8);
+    expect(layoutColumns(p)[0].topShelfY).toBeNull(); // rod column: no triangle under a stepped top
   });
 });

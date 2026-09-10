@@ -20,7 +20,7 @@ export function columnFrontPrims(L: ColumnLayout, cab: Cabinet, dx = 0): Prim[] 
   if (L.doorOutline) out.push(poly(L.doorOutline.map(sh), 'thin', 'panel'));
   for (const d of L.drawerFronts) out.push(rectPrim(x0 + d.x0, pl + d.y0, d.x1 - d.x0, d.y1 - d.y0, stroke, fill));
   for (const y of L.shelfYs) out.push(rectPrim(x0 + t, y - t, L.interiorWidth, t, stroke));
-  if (L.topShelfY !== null) out.push(rectPrim(x0 + t, L.topShelfY - t, L.interiorWidth, t));
+  if (L.topShelfY !== null) out.push(rectPrim(x0 + t, L.topShelfY - t, L.interiorWidth, t, stroke));
   if (L.rodY !== null) out.push(line(v2(x0 + t, L.rodY), v2(x1 - t, L.rodY), 'dashed'));
   return out;
 }

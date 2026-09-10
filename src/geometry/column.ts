@@ -28,7 +28,7 @@ export interface ColumnLayout extends ColumnRange {
   doorOutline: Vec2[] | null;      // column-local
   drawerFronts: DrawerFront[];     // column-local
   drawerStyle: DrawerStyle | null;
-  topShelfY: number | null;   // absolute top surface of the open shelf above overlay drawers (sloped top only)
+  topShelfY: number | null;   // absolute top surface of the open shelf in the triangle above overlay drawers or a rod (sloped top only)
   rodY: number | null;             // absolute Y of rod axis
 }
 
@@ -91,6 +91,7 @@ export function layoutColumn(p: Project, r: ColumnRange): ColumnLayout {
   }
 
   const rodY = col.rod && col.interior === 'shelves' ? r.hLow - ROD_DROP : null;
+  if (rodY !== null && sloped) topShelfY = floorY + interiorHeight; // open shelf in the triangle above the rod
 
   return {
     ...r,

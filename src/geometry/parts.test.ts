@@ -11,9 +11,10 @@ describe('buildParts (default project)', () => {
   const byId = (id: string) => parts.find((x) => x.id === id)!;
 
   it('creates the expected part count', () => {
-    // col0: 6 carcass + door + rod = 8; col1: 6 + door + 3 shelves = 10;
+    // col0: 6 carcass + door + rod + top shelf = 9; col1: 6 + door + 3 shelves = 10;
     // col2: 6 + 4 drawers + top shelf = 11; col3: 6 + door + 3 internal drawers = 10
-    expect(parts).toHaveLength(39);
+    expect(parts).toHaveLength(40);
+    expect(byId('col0-topShelf')).toBeDefined();
     // every column: sideL, sideR, bottom, top, back, plinth
     for (let i = 0; i < 4; i++) {
       for (const k of ['sideL', 'sideR', 'bottom', 'top', 'back', 'plinth']) expect(byId(`col${i}-${k}`)).toBeDefined();
@@ -63,7 +64,7 @@ describe('buildParts (default project)', () => {
     near(b.min.z, 20); near(b.max.z, 596);
     near(b.min.x, 718); near(b.max.x, 1282);
     expect(byId('col1-shelf3')).toBeDefined();
-    expect(parts.filter((x) => x.kind === 'shelf')).toHaveLength(4);
+    expect(parts.filter((x) => x.kind === 'shelf')).toHaveLength(5); // 3 + top shelves for col0 (rod) and col2 (drawers)
     expect(s.nameKey).toBe('shelf');
     expect(s.index).toBe(1);
     expect(byId('col1-shelf3').index).toBe(3);
